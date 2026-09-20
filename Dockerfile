@@ -1,5 +1,5 @@
 # Production Dockerfile for ZaiProxy
-FROM denoland/deno:2.0.0
+FROM denoland/deno:latest
 
 WORKDIR /app
 
@@ -16,4 +16,4 @@ RUN deno cache src/server/router.ts
 ENV PORT=10000
 EXPOSE 10000 9090
 
-CMD ["deno", "run", "--allow-net", "--allow-env", "--allow-read", "src/server/router.ts"]
+CMD ["deno", "run", "-A", "src/server/router.ts"]
