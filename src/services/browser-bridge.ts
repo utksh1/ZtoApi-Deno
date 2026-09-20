@@ -382,12 +382,19 @@ export class BrowserBridgeService {
       try {
         const initialCount = await page.evaluate<number>(() => document.querySelectorAll(".chat-assistant").length);
 
-        await page.waitForSelector("#chat-input", { state: "visible", timeout: 10000 });
+        await page.waitForSelector("#chat-input", { state: "visible", timeout: 15000 });
         await page.fill("#chat-input", prompt);
+        await page.evaluate(() => {
+          const input = document.querySelector("#chat-input");
+          if (input) {
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+            input.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+        });
 
-        // Wait for send button to become enabled after input fill
+        // Click send button
         try {
-          await page.waitForSelector("#send-message-button:not([disabled])", { timeout: 1500 });
+          await page.waitForSelector("#send-message-button:not([disabled])", { timeout: 2000 });
           await page.click("#send-message-button", { timeout: 2000 });
         } catch {
           await page.evaluate<void>(() => {
@@ -406,39 +413,46 @@ export class BrowserBridgeService {
         // Ultra-low latency 50ms polling loop (TTFT minimized)
         while (Date.now() - start < timeoutCeiling) {
           await page.waitForTimeout(50);
-          const state = await page.evaluate<
-            { ans: string; think: string; hasSendBtn: boolean; hasStopSquare: boolean } | null,
-            number
-          >((init: number) => {
-            const assistants = Array.from(document.querySelectorAll(".chat-assistant"));
-            if (assistants.length <= init) return null;
-            const last = assistants[assistants.length - 1] as HTMLElement;
 
-            // Signal 1: Has send button reappeared and enabled?
-            const hasSendBtn = document.querySelector("#send-message-button:not([disabled])") !== null;
+          let state = null;
+          try {
+            state = await page.evaluate<
+              { ans: string; think: string; hasSendBtn: boolean; hasStopSquare: boolean } | null,
+              number
+            >((init: number) => {
+              const assistants = Array.from(document.querySelectorAll(".chat-assistant"));
+              if (assistants.length <= init) return null;
+              const last = assistants[assistants.length - 1] as HTMLElement;
 
-            // Signal 2: Is stop square icon still present?
-            const hasStopSquare =
-              document.querySelector("form span.size-3, form span.rounded-xs, button[aria-label*='Stop']") !== null;
+              // Signal 1: Has send button reappeared and enabled?
+              const hasSendBtn = document.querySelector("#send-message-button:not([disabled])") !== null;
 
-            // Signal 3: Extract answer text
-            const clone = last.cloneNode(true) as HTMLElement;
-            const cloneThink = clone.querySelector(".thinking-chain-container");
-            if (cloneThink) cloneThink.remove();
-            const ans = clone.innerText.trim();
+              // Signal 2: Is stop square icon still present?
+              const hasStopSquare =
+                document.querySelector("form span.size-3, form span.rounded-xs, button[aria-label*='Stop']") !== null;
 
-            // Signal 4: Extract reasoning text
-            let think = (last.querySelector(".thinking-chain-container") as HTMLElement)?.innerText.trim() || "";
-            if (think === "Thought Process" || think === "Thinking...") {
-              think = "";
-            } else if (think.startsWith("Thought Process\n")) {
-              think = think.replace(/^Thought Process\n+/, "");
-            } else if (think.startsWith("Thinking...\n")) {
-              think = think.replace(/^Thinking...\n+/, "");
-            }
+              // Signal 3: Extract answer text
+              const clone = last.cloneNode(true) as HTMLElement;
+              const cloneThink = clone.querySelector(".thinking-chain-container");
+              if (cloneThink) cloneThink.remove();
+              const ans = clone.innerText.trim();
 
-            return { ans, think, hasSendBtn, hasStopSquare };
-          }, initialCount);
+              // Signal 4: Extract reasoning text
+              let think = (last.querySelector(".thinking-chain-container") as HTMLElement)?.innerText.trim() || "";
+              if (think === "Thought Process" || think === "Thinking...") {
+                think = "";
+              } else if (think.startsWith("Thought Process\n")) {
+                think = think.replace(/^Thought Process\n+/, "");
+              } else if (think.startsWith("Thinking...\n")) {
+                think = think.replace(/^Thinking...\n+/, "");
+              }
+
+              return { ans, think, hasSendBtn, hasStopSquare };
+            }, initialCount);
+          } catch {
+            // Context destroyed during Svelte route transition to /c/<chat_id>
+            continue;
+          }
 
           if (!state) continue;
 
@@ -551,6 +565,13 @@ export class BrowserBridgeService {
 
       await page.waitForSelector("#chat-input", { state: "visible", timeout: 10000 });
       await page.fill("#chat-input", prompt);
+      await page.evaluate(() => {
+        const input = document.querySelector("#chat-input");
+        if (input) {
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+          input.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      });
 
       // Wait for send button to become enabled after input fill
       try {
@@ -572,34 +593,40 @@ export class BrowserBridgeService {
 
       while (Date.now() - start < timeoutCeiling) {
         await page.waitForTimeout(50);
-        const data = await page.evaluate<
-          { ans: string; think: string; hasSendBtn: boolean; hasStopSquare: boolean } | null,
-          number
-        >((init: number) => {
-          const assistants = Array.from(document.querySelectorAll(".chat-assistant"));
-          if (assistants.length <= init) return null;
-          const last = assistants[assistants.length - 1] as HTMLElement;
+        let data = null;
+        try {
+          data = await page.evaluate<
+            { ans: string; think: string; hasSendBtn: boolean; hasStopSquare: boolean } | null,
+            number
+          >((init: number) => {
+            const assistants = Array.from(document.querySelectorAll(".chat-assistant"));
+            if (assistants.length <= init) return null;
+            const last = assistants[assistants.length - 1] as HTMLElement;
 
-          const hasSendBtn = document.querySelector("#send-message-button:not([disabled])") !== null;
-          const hasStopSquare =
-            document.querySelector("form span.size-3, form span.rounded-xs, button[aria-label*='Stop']") !== null;
+            const hasSendBtn = document.querySelector("#send-message-button:not([disabled])") !== null;
+            const hasStopSquare =
+              document.querySelector("form span.size-3, form span.rounded-xs, button[aria-label*='Stop']") !== null;
 
-          const clone = last.cloneNode(true) as HTMLElement;
-          const cloneThink = clone.querySelector(".thinking-chain-container");
-          if (cloneThink) cloneThink.remove();
-          const ans = clone.innerText.trim();
+            const clone = last.cloneNode(true) as HTMLElement;
+            const cloneThink = clone.querySelector(".thinking-chain-container");
+            if (cloneThink) cloneThink.remove();
+            const ans = clone.innerText.trim();
 
-          let think = (last.querySelector(".thinking-chain-container") as HTMLElement)?.innerText.trim() || "";
-          if (think === "Thought Process" || think === "Thinking...") {
-            think = "";
-          } else if (think.startsWith("Thought Process\n")) {
-            think = think.replace(/^Thought Process\n+/, "");
-          } else if (think.startsWith("Thinking...\n")) {
-            think = think.replace(/^Thinking...\n+/, "");
-          }
+            let think = (last.querySelector(".thinking-chain-container") as HTMLElement)?.innerText.trim() || "";
+            if (think === "Thought Process" || think === "Thinking...") {
+              think = "";
+            } else if (think.startsWith("Thought Process\n")) {
+              think = think.replace(/^Thought Process\n+/, "");
+            } else if (think.startsWith("Thinking...\n")) {
+              think = think.replace(/^Thinking...\n+/, "");
+            }
 
-          return { ans, think, hasSendBtn, hasStopSquare };
-        }, initialCount);
+            return { ans, think, hasSendBtn, hasStopSquare };
+          }, initialCount);
+        } catch {
+          // Context destroyed during Svelte route transition to /c/<chat_id>
+          continue;
+        }
 
         if (!data) continue;
 
