@@ -1,6 +1,6 @@
-# AGENTS.md - ZtoApi Development Guide
+# AGENTS.md - ZaiProxy Development Guide
 
-This file provides essential information for agents working on the ZtoApi codebase. It includes build/lint/test commands, code style guidelines, and an overview of the project's structure and design.
+This file provides essential information for agents working on the ZaiProxy codebase. It includes build/lint/test commands, code style guidelines, and an overview of the project's structure and design.
 
 ## Build, Lint, and Test Commands
 
@@ -8,7 +8,6 @@ This file provides essential information for agents working on the ZtoApi codeba
 
 - **Start the server**: `deno task start`
 - **Development mode (with watch)**: `deno task dev`
-- **Test Anthropic integration**: `deno run --allow-net test_anthropic.ts`
 
 ### Testing
 
@@ -54,7 +53,7 @@ This file provides essential information for agents working on the ZtoApi codeba
 - **Variables and functions**: camelCase (e.g., `debugLog`, `getModelConfig`).
 - **Constants**: UPPER_SNAKE_CASE (e.g., `DEFAULT_MODEL`, `THINK_TAGS_MODE`).
 - **Classes and interfaces**: PascalCase (e.g., `AnthropicMessagesRequest`, `ModelConfig`).
-- **Files**: kebab-case for multi-word files (e.g., `main.ts`, `anthropic.ts`).
+- **Files**: kebab-case for multi-word files (e.g., `router.ts`, `upstream-client.ts`).
 
 ### Comments and Documentation
 
@@ -64,9 +63,9 @@ This file provides essential information for agents working on the ZtoApi codeba
 
 ### Imports
 
-- **Standard library**: Import from `https://deno.land/std@<version>/` (e.g., `import { decodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";`).
-- **Local modules**: Use relative paths (e.g., `import { convertAnthropicToOpenAI } from "./anthropic.ts";`).
-- **NPM packages**: Use `npm:` prefix (e.g., `"gpt-tokenizer": "npm:gpt-tokenizer@^3.0.1"` in `deno.json`).
+- **Standard library**: Import from JSR (e.g., `import { decodeBase64 } from "@std/encoding/base64";`).
+- **Local modules**: Use relative paths (e.g., `import { convertAnthropicToOpenAI } from "../anthropic/core.ts";`).
+- **NPM packages**: Use `npm:` prefix (e.g., `"gpt-tokenizer": "npm:gpt-tokenizer@^3.0.2"` in `deno.json`).
 - **Group imports**: Standard library first, then local, then NPM.
 
 ### Types and Interfaces
@@ -118,65 +117,11 @@ function processInput(input: string): string {
 }
 ```
 
-## Native Tool Calling System
-
-### Overview
-
-ZtoApi includes a comprehensive native tool calling system that allows AI models to execute predefined server-side functions. This enables richer interactions beyond text generation.
-
-### Architecture
-
-- **Tool Registry** (`src/services/tool-registry.ts`): Central registry managing all available tools
-- **Built-in Tools** (`src/services/init-tools.ts`): Default tools (time, URL fetching, hashing, math)
-- **Tool Processor** (`src/services/tool-processor.ts`): Detection and execution of tool calls
-- **Validation** (`src/utils/validation.ts`): Tool request validation and security checks
-
-### Supported Tools
-
-1. **get_current_time**: Returns current UTC time
-2. **fetch_url**: Fetches content from URLs (text/JSON)
-3. **hash_string**: Calculates SHA256/SHA1 hashes
-4. **calculate_expression**: Safely evaluates math expressions
-
-### Tool Call Detection
-
-The system detects tool calls in multiple formats:
-
-- JSON: `{"name": "tool_name", "arguments": {...}}`
-- XML: `<function_calls><invoke name="tool_name">...</invoke></function_calls>`
-- Simple: `function_call: tool_name()`
-
-### Adding Custom Tools
-
-Register new tools in `src/services/init-tools.ts`:
-
-```typescript
-registerTool(
-  "tool_name",
-  async function (args: { param: string }) {
-    return `Processed: ${args.param}`;
-  },
-  "Tool description",
-  {
-    type: "object",
-    properties: { param: { type: "string" } },
-    required: ["param"],
-  },
-);
-```
-
-### Security Features
-
-- Whitelist-based tool registry
-- Input validation and sanitization
-- Sandboxed execution environment
-- Error handling without server crashes
-
 ## Project Structure and Design
 
 ### Overview
 
-ZtoApi is a Deno-based API proxy server that provides OpenAI and Anthropic Claude-compatible interfaces to Z.ai's GLM models. It supports streaming and non-streaming responses, includes a real-time monitoring dashboard, and handles multimodal content (text, images, videos, documents, audio).
+ZaiProxy is a Deno-based API proxy server that provides OpenAI and Anthropic Claude-compatible interfaces to Z.ai's GLM models. It supports streaming and non-streaming responses, includes a real-time monitoring dashboard, and handles multimodal content (text, images, videos, documents, audio).
 
 ### Architecture
 
@@ -186,44 +131,39 @@ ZtoApi is a Deno-based API proxy server that provides OpenAI and Anthropic Claud
 - **Authentication**: API key validation with optional anonymous token fetching.
 - **Streaming**: Server-Sent Events (SSE) for real-time responses.
 - **UI**: Built-in web dashboard for monitoring (`/dashboard`).
-- **Tool Calling**: Native tool execution with registry-based management and validation.
 
 ### Key Components
 
-- **main.ts**: Core server logic, request handling, routing, and upstream communication.
-- **anthropic.ts**: Anthropic API conversion utilities, model mappings, and token counting.
-- **Tool Services** (`src/services/`):
-  - `tool-registry.ts`: Central registry for managing native tools
-  - `init-tools.ts`: Built-in tools (get_current_time, fetch_url, hash_string, calculate_expression)
-  - `tool-processor.ts`: Tool call detection and execution
+- **src/server/router.ts**: Core server logic, request handling, routing, and upstream communication.
+- **src/anthropic/core.ts**: Anthropic API conversion utilities, model mappings, and token counting.
+- **src/handlers/openai.ts**: OpenAI `/v1/chat/completions` endpoint handler.
+- **src/handlers/dashboard.ts**: Web dashboard and models endpoint handler.
+- **src/services/upstream-client.ts**: Upstream communication and CDP browser bridge routing.
 - **UI files** (`ui/`): HTML/CSS/JS for the dashboard and documentation.
-- **Tests** (`*_test.ts`): Unit tests for core functions, including `native_tool_calling_test.ts`.
+- **Tests** (`tests/`): Unit tests for core streaming and utility functions.
 - **Configuration**: `deno.json` for tasks and imports; environment variables for runtime config.
 
 ### Design Patterns
 
 - **Modular interfaces**: Separate interfaces for OpenAI and Anthropic requests/responses.
 - **Conversion layers**: Functions to convert between API formats (e.g., `convertAnthropicToOpenAI`).
-- **Tool processing**: Detection and execution of tool calls in multiple formats (JSON, XML, simple).
 - **Configuration-driven**: Model configs and feature flags via constants and env vars.
 - **Error propagation**: Centralized error handling with detailed logging.
 - **State management**: Global stats and live request tracking for the dashboard.
-- **Tool registry**: Whitelist-based system for managing and executing native tools.
 
 ### Supported Models
 
-- **GLM-4.5** (`0727-360B-API`): Text-based, supports thinking and MCP.
-- **GLM-4.6** (`GLM-4-6-API-V1`): Advanced text model with vision and MCP.
-- **GLM-4.5V** (`glm-4.5v`): Multimodal model supporting images, videos, etc.
+- **GLM-5.3-Flash** (`GLM-5.3-Flash`): Flagship fast multimodal model, 1M context window, reasoning effort & thinking.
+- **GLM-5.3** (`GLM-5.3`): Frontier reasoning and agentic model, 1M context window.
+- **GLM-5.2** (`GLM-5.2`): High-performance reasoning model, 1M context window.
 
 ### Key Features
 
 - **Thinking content modes**: `strip`, `thinking`, `think`, `raw`, `separate` for handling model reasoning.
 - **Multimodal support**: Process images, videos, documents, and audio in requests.
-- **Native tool calling**: AI can execute server-side functions (get_current_time, fetch_url, hash_string, calculate_expression).
 - **Real-time stats**: Track requests, response times, and errors via global state.
 - **Anonymous tokens**: Automatic fetching for unauthenticated requests.
-- **Signature generation**: Custom HMAC-based signing for upstream requests.
+- **Browser bridge**: CDP connection to active browser session for resilient upstream routing.
 
 ### Deployment
 
@@ -236,5 +176,3 @@ ZtoApi is a Deno-based API proxy server that provides OpenAI and Anthropic Claud
 - Update this file whenever system or design changes occur (e.g., new endpoints, config options, or architectural shifts).
 - Ensure all new code adheres to the style guidelines above.
 - Run `deno task test` and `deno task lint` before commits to maintain code quality.
-- When adding new tools, update `src/services/init-tools.ts` and test with `native_tool_calling_test.ts`.
-- Tool registry is initialized automatically on server startup via `src/server/router.ts`.

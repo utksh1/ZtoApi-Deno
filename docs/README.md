@@ -1,6 +1,6 @@
-# 📚 ZtoApi Documentation
+# 📚 ZaiProxy Documentation
 
-Welcome to the comprehensive documentation for ZtoApi! This folder contains detailed guides and references to help you get the most out of our dual-API proxy.
+Welcome to the comprehensive documentation for ZaiProxy! This folder contains detailed guides and references to help you get the most out of our dual-API proxy with session-based authentication.
 
 ## 📖 Documentation Sections
 
@@ -23,4 +23,4 @@ Found an issue or want to contribute? Visit the main [README](../README.md) for 
 
 ---
 
-_This documentation is organized for easy navigation and maintenance. Each section focuses on a specific aspect of ZtoApi._
+_This documentation is organized for easy navigation and maintenance. Each section focuses on a specific aspect of ZaiProxy._

@@ -1,58 +1,6 @@
 /**
  * Type definitions for the ZtoApi server
- * This file contains all the type definitions that were previously in main.ts
  */
-
-declare global {
-  interface ImportMeta {
-    main: boolean;
-  }
-}
-
-declare namespace Deno {
-  interface Conn {
-    readonly rid: number;
-    localAddr: Addr;
-    remoteAddr: Addr;
-    read(p: Uint8Array): Promise<number | null>;
-    write(p: Uint8Array): Promise<number>;
-    close(): void;
-  }
-
-  interface Addr {
-    hostname: string;
-    port: number;
-    transport: string;
-  }
-
-  interface Listener extends AsyncIterable<Conn> {
-    readonly addr: Addr;
-    accept(): Promise<Conn>;
-    close(): void;
-    [Symbol.asyncIterator](): AsyncIterableIterator<Conn>;
-  }
-
-  interface HttpConn {
-    nextRequest(): Promise<RequestEvent | null>;
-    [Symbol.asyncIterator](): AsyncIterableIterator<RequestEvent>;
-  }
-
-  interface RequestEvent {
-    request: Request;
-    respondWith(r: Response | Promise<Response>): Promise<void>;
-  }
-
-  function listen(options: { port: number }): Listener;
-  function serveHttp(conn: Conn): HttpConn;
-  function serve(options: { port: number; handler: (request: Request) => Promise<Response> }): void;
-
-  namespace env {
-    function get(key: string): string | undefined;
-  }
-
-  export function readTextFile(path: string): Promise<string>;
-  export function readFile(path: string): Promise<Uint8Array>;
-}
 
 /**
  * Request statistics interface
@@ -78,6 +26,8 @@ export interface LiveRequest {
   duration: number;
   userAgent: string;
   model?: string;
+  tokens?: { prompt?: number; completion?: number; total?: number };
+  error?: string;
 }
 
 /**
@@ -147,10 +97,13 @@ export interface OpenAIRequest {
   messages: Message[];
   stream?: boolean;
   temperature?: number;
+  top_p?: number;
   max_tokens?: number;
+  stop?: string[];
   reasoning?: boolean;
+  reasoning_effort?: "low" | "medium" | "high" | "max" | string;
   tools?: Tool[];
-  tool_choice?: "none" | "auto" | "required";
+  tool_choice?: "none" | "auto" | "required" | { type: string; function: { name: string } } | string;
 }
 
 /**
@@ -163,8 +116,9 @@ export interface UpstreamRequest {
   params?: Record<string, unknown>;
   features?: Record<string, unknown>;
   tools?: Tool[];
-  tool_choice?: "none" | "auto" | "required";
+  tool_choice?: "none" | "auto" | "required" | { type: string; function: { name: string } } | string;
   enable_thinking?: boolean;
+  reasoning_effort?: string;
   web_search?: boolean;
   background_tasks?: Record<string, boolean>;
   chat_id?: string;
@@ -201,7 +155,7 @@ export interface Choice {
   index: number;
   message?: Message;
   delta?: Delta;
-  finish_reason?: string;
+  finish_reason?: string | null;
   tool_calls?: ToolCall[];
 }
 
@@ -213,9 +167,9 @@ export interface Delta {
 }
 
 export interface Usage {
-  prompt_tokens: number;
-  completion_tokens: number;
-  total_tokens: number;
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
 }
 
 /**
@@ -236,6 +190,7 @@ export interface ModelCapabilities {
   advancedSearch: boolean;
   vision: boolean;
   mcp: boolean;
+  reasoningEffort?: boolean;
 }
 
 /**
@@ -256,7 +211,7 @@ export interface UpstreamData {
   type: string;
   data: {
     delta_content: string;
-    edit_content?: string; // Contains complete thinking block when phase changes
+    edit_content?: string;
     edit_index?: number;
     phase: string;
     done: boolean;
@@ -284,20 +239,19 @@ export interface Model {
   object: string;
   created: number;
   owned_by: string;
+  context_window?: number;
+  max_output_tokens?: number;
 }
 
 /**
  * Supported model configuration
  */
 export interface ModelConfig {
-  id: string; // Model ID as exposed by API
-  name: string; // Display name
-  upstreamId: string; // Upstream Z.ai model ID
-  capabilities: {
-    vision: boolean;
-    mcp: boolean;
-    thinking: boolean;
-  };
+  id: string;
+  name: string;
+  upstreamId: string;
+  contextWindow?: number;
+  capabilities: ModelCapabilities;
   defaultParams: {
     top_p: number;
     temperature: number;
@@ -305,10 +259,15 @@ export interface ModelConfig {
   };
 }
 
-// Thinking content handling mode:
-// - "strip": remove <details> tags and show only content
-// - "thinking": convert <details> to <thinking> tags
-// - "think": convert <details> to <think> tags
-// - "raw": keep as-is
-// - "separate": separate reasoning into reasoning_content field
-export const THINK_TAGS_MODE = "think"; // options: "strip", "thinking", "think", "raw", "separate"
+/**
+ * Token information for token pool management
+ */
+export interface TokenInfo {
+  token: string;
+  isValid: boolean;
+  lastUsed: number;
+  failureCount: number;
+  isAnonymous: boolean;
+}
+
+export const THINK_TAGS_MODE = "think";

@@ -4,13 +4,13 @@
  * Ported from Python implementation with full feature parity
  */
 
-import { decodeBase64 } from "@std/encoding/base64";
 import { CONFIG, UPSTREAM_URL } from "../config/constants.ts";
 import { logger } from "../utils/logger.ts";
 import { generateSignature } from "./signature.ts";
 import { SmartHeaderGenerator } from "./header-generator.ts";
 import { getTokenPool, TokenPool } from "./token-pool.ts";
 import { GuestSessionPool, initializeGuestSessionPool } from "./guest-session-pool.ts";
+import { getBrowserBridgeService } from "./browser-bridge.ts";
 import type { Message, UpstreamRequest } from "../types/definitions.ts";
 import type { ModelConfig } from "../config/models.ts";
 
@@ -61,9 +61,7 @@ export class UpstreamClient {
     try {
       const parts = token.split(".");
       if (parts.length >= 2) {
-        const payload = JSON.parse(
-          new TextDecoder().decode(decodeBase64(parts[1])),
-        );
+        const payload = JSON.parse(atob(parts[1]));
         for (const key of ["id", "user_id", "uid", "sub"]) {
           const val = payload[key];
           if (typeof val === "string" || typeof val === "number") {
@@ -83,8 +81,9 @@ export class UpstreamClient {
   private async getAuthInfo(
     excludedTokens?: Set<string>,
     excludedGuestUserIds?: Set<string>,
+    tokenOverride?: string,
   ): Promise<AuthInfo> {
-    const token = await this.tokenPool.getToken(excludedTokens);
+    const token = tokenOverride || await this.tokenPool.getToken(excludedTokens);
 
     if (token) {
       const userId = this.extractUserIdFromToken(token);
@@ -93,7 +92,7 @@ export class UpstreamClient {
         userId,
         username: "User",
         authMode: "authenticated",
-        tokenSource: "auth_pool",
+        tokenSource: tokenOverride ? "token_override" : "auth_pool",
         guestUserId: null,
       };
     }
@@ -264,10 +263,11 @@ export class UpstreamClient {
     modelConfig: ModelConfig,
     excludedTokens?: Set<string>,
     excludedGuestUserIds?: Set<string>,
+    tokenOverride?: string,
   ): Promise<TransformedRequest> {
     const normalizedMessages = this.preprocessMessages(request.messages);
 
-    const authInfo = await this.getAuthInfo(excludedTokens, excludedGuestUserIds);
+    const authInfo = await this.getAuthInfo(excludedTokens, excludedGuestUserIds, tokenOverride);
     const token = authInfo.token;
 
     if (!token) {
@@ -314,6 +314,15 @@ export class UpstreamClient {
       bodyParams.max_tokens = Number(params.max_tokens);
     }
 
+    let reasoningEffort: string | undefined;
+    if (modelConfig.capabilities.reasoningEffort && enableThinking) {
+      const requested = String(request.reasoning_effort || "").toLowerCase();
+      if (requested === "low") reasoningEffort = "low";
+      else if (requested === "medium" || requested === "high") reasoningEffort = "high";
+      else if (requested === "max") reasoningEffort = "max";
+      else reasoningEffort = "high";
+    }
+
     const body: Record<string, unknown> = {
       stream: true,
       model: modelConfig.upstreamId,
@@ -337,6 +346,7 @@ export class UpstreamClient {
           { type: "mcp", server: "advanced-search", status: "hidden" },
         ],
         enable_thinking: enableThinking,
+        ...(reasoningEffort ? { reasoning_effort: reasoningEffort } : {}),
       },
       background_tasks: {
         title_generation: false,
@@ -378,7 +388,7 @@ export class UpstreamClient {
       timestamp: timestamp.toString(),
       requestId,
       user_id: userId,
-      version: "0.0.1",
+      version: CONFIG.DEFAULT_CLIENT_VERSION || "1.0.95",
       platform: "web",
       token,
       current_url: `https://chat.z.ai/c/${chatId}`,
@@ -405,8 +415,22 @@ export class UpstreamClient {
   async chatCompletion(
     request: UpstreamRequest,
     modelConfig: ModelConfig,
+    tokenOverride?: string,
   ): Promise<Response> {
-    const maxAttempts = this.getTotalRetryLimit();
+    // If Browser Bridge is available and active, route request through it
+    if (!tokenOverride) {
+      const browserBridge = getBrowserBridgeService();
+      if (await browserBridge.isAvailable()) {
+        try {
+          logger.info("Routing completion through active browser bridge");
+          return await browserBridge.chatCompletion(request, modelConfig);
+        } catch (bridgeError) {
+          logger.warn(`Browser bridge failed, falling back to direct API: ${bridgeError}`);
+        }
+      }
+    }
+
+    const maxAttempts = tokenOverride ? 1 : this.getTotalRetryLimit();
     const excludedTokens = new Set<string>();
     const excludedGuestUserIds = new Set<string>();
 
@@ -416,6 +440,7 @@ export class UpstreamClient {
         modelConfig,
         excludedTokens,
         excludedGuestUserIds,
+        tokenOverride,
       );
 
       try {
@@ -453,7 +478,33 @@ export class UpstreamClient {
           continue;
         }
 
-        return new Response(errorMessage, {
+        let safeErrorJson: string;
+        try {
+          const parsed = JSON.parse(errorMessage);
+          if (parsed && typeof parsed === "object" && "error" in parsed) {
+            safeErrorJson = JSON.stringify(parsed);
+          } else {
+            safeErrorJson = JSON.stringify({
+              error: {
+                message: parsed?.message || parsed?.detail || errorMessage || "Upstream request failed",
+                type: errorCode >= 500 ? "upstream_error" : "invalid_request_error",
+                code: errorCode === 401 ? "unauthorized" : errorCode === 429 ? "rate_limit_exceeded" : "upstream_error",
+              },
+            });
+          }
+        } catch {
+          safeErrorJson = JSON.stringify({
+            error: {
+              message: errorMessage.length > 300
+                ? `Upstream service returned HTTP ${errorCode}`
+                : errorMessage || "Upstream request failed",
+              type: errorCode >= 500 ? "upstream_error" : "invalid_request_error",
+              code: errorCode === 401 ? "unauthorized" : errorCode === 429 ? "rate_limit_exceeded" : "upstream_error",
+            },
+          });
+        }
+
+        return new Response(safeErrorJson, {
           status: errorCode,
           headers: { "Content-Type": "application/json" },
         });
@@ -515,6 +566,7 @@ export class UpstreamClient {
       method: "POST",
       headers: transformed.headers,
       body: JSON.stringify(transformed.body),
+      keepalive: true,
     };
 
     return await fetch(transformed.url, fetchOptions);
@@ -535,9 +587,10 @@ export class UpstreamClient {
       });
 
     const headers = new Headers();
-    headers.set("Content-Type", "text/event-stream");
-    headers.set("Cache-Control", "no-cache");
+    headers.set("Content-Type", "text/event-stream; charset=utf-8");
+    headers.set("Cache-Control", "no-cache, no-transform");
     headers.set("Connection", "keep-alive");
+    headers.set("X-Accel-Buffering", "no");
     headers.set("Access-Control-Allow-Origin", "*");
 
     return new Response(stream.readable, {
@@ -624,7 +677,21 @@ export class UpstreamClient {
     let content = "";
     let reasoningContent = "";
 
-    if (phase === "thinking" && deltaContent) {
+    const errorObj = (data.error || (data.data as Record<string, unknown> | undefined)?.error) as
+      | Record<string, unknown>
+      | undefined;
+    if (errorObj) {
+      const code = String(errorObj.code || errorObj.error_code || "");
+      let detail = String(errorObj.detail || errorObj.message || "Upstream error");
+      if (code === "FRONTEND_CAPTCHA_REQUIRED" || detail.includes("captcha")) {
+        detail =
+          "Z.ai requires human verification (captcha). Please configure an authenticated ZAI_TOKEN in your .env file (extracted from browser localStorage on chat.z.ai).";
+      } else if (code === "403" || detail.includes("not available for current user level")) {
+        detail =
+          `Model '${model}' is not available for the current user level on Z.ai. Please configure an authenticated ZAI_TOKEN with access to this model, or use GLM-5.3-Flash.`;
+      }
+      content = `[Error from Z.ai: ${detail}]`;
+    } else if (phase === "thinking" && deltaContent) {
       reasoningContent = this.cleanReasoningDelta(deltaContent);
     } else if (phase === "answer" || phase === "other") {
       content = deltaContent || this.extractAnswerContent(editContent);
@@ -733,7 +800,7 @@ export class UpstreamClient {
 
       try {
         const chunk = JSON.parse(dataStr);
-        const chunkType = (chunk as Record<string, unknown>).type as string;
+        const _chunkType = (chunk as Record<string, unknown>).type as string;
         const innerData = (chunk as Record<string, unknown>).data as Record<string, unknown> | undefined;
 
         if (!innerData) continue;
@@ -746,7 +813,22 @@ export class UpstreamClient {
         const deltaContent = (innerData.delta_content as string) || "";
         const editContent = (innerData.edit_content as string) || "";
 
-        if (phase === "thinking" && deltaContent) {
+        const errorObj = (innerData.error || (innerData.data as Record<string, unknown> | undefined)?.error) as
+          | Record<string, unknown>
+          | undefined;
+        if (errorObj) {
+          const code = String(errorObj.code || errorObj.error_code || "");
+          let detail = String(errorObj.detail || errorObj.message || "Upstream error");
+          if (code === "FRONTEND_CAPTCHA_REQUIRED" || detail.includes("captcha")) {
+            detail =
+              "Z.ai requires human verification (captcha). Please configure an authenticated ZAI_TOKEN in your .env file (extracted from browser localStorage on chat.z.ai).";
+          } else if (code === "403" || detail.includes("not available for current user level")) {
+            detail =
+              `Model '${transformed.model}' is not available for the current user level on Z.ai. Please configure an authenticated ZAI_TOKEN with access to this model, or use GLM-5.3-Flash.`;
+          }
+          finalContent = `[Error from Z.ai: ${detail}]`;
+          break;
+        } else if (phase === "thinking" && deltaContent) {
           reasoningContent += this.cleanReasoningDelta(deltaContent);
         } else if (phase === "answer" || phase === "other") {
           finalContent += deltaContent || this.extractAnswerContent(editContent);
@@ -756,6 +838,22 @@ export class UpstreamClient {
       } catch {
         // skip invalid JSON
       }
+    }
+
+    if (finalContent.startsWith("[Error from Z.ai:")) {
+      return new Response(
+        JSON.stringify({
+          error: {
+            message: finalContent.replace(/^\[Error from Z\.ai:\s*|\]$/g, ""),
+            type: "upstream_error",
+            code: "upstream_error",
+          },
+        }),
+        {
+          status: finalContent.includes("403") || finalContent.includes("not available") ? 403 : 400,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
     }
 
     finalContent = (finalContent || reasoningContent).trim();

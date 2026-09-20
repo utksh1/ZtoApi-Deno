@@ -23,7 +23,7 @@ export class GuestSessionPool {
   private poolSize: number;
   private sessionMaxAge: number;
   private maintenanceInterval: number;
-  private maintenanceTask: number | null = null;
+  private maintenanceTask: ReturnType<typeof setTimeout> | null = null;
   private cleanupParallelism: number;
 
   constructor(

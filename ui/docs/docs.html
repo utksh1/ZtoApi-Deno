@@ -3,286 +3,436 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZtoApi Docs - OpenAI API</title>
+    <title>ZaiProxy Documentation - OpenAI & Anthropic API Reference</title>
+    <meta name="description"
+      content="Complete API reference, integration examples, and model matrix for ZaiProxy dual-protocol gateway.">
     <link rel="stylesheet" href="/ui/docs/docs.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet">
   </head>
-  <body>
-    <!-- Animated Background -->
-    <div class="bg-animation">
-      <div class="floating-shapes"></div>
-    </div>
+  <body class="dark-mode">
+    <div class="bg-grid-pattern" aria-hidden="true"></div>
 
-    <!-- Dark Mode Toggle -->
-    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
-      <span class="sun-icon">☀️</span>
-      <span class="moon-icon">🌙</span>
-    </button>
+    <!-- Header -->
+    <header class="site-header">
+      <div class="header-inner">
+        <div class="header-left">
+          <a href="/" class="brand-logo" aria-label="ZaiProxy Home">
+            <div class="brand-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="16 18 22 12 16 6"></polyline>
+                <polyline points="8 6 2 12 8 18"></polyline>
+              </svg>
+            </div>
+            <span class="brand-name">ZaiProxy</span>
+            <span class="brand-sub">Docs</span>
+          </a>
+        </div>
 
-    <div class="container">
-      <h1>ZtoApi Documentation</h1>
+        <nav class="nav-links">
+          <a href="/" class="nav-link">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            Playground
+          </a>
+          <a href="/dashboard" class="nav-link">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 3v18h18"></path>
+              <path d="M18 17V9"></path>
+              <path d="M13 17V5"></path>
+              <path d="M8 17v-3"></path>
+            </svg>
+            Dashboard
+          </a>
+        </nav>
 
-      <div class="toc">
-        <h2>Contents</h2>
-        <ul>
-          <li><a href="#overview">Overview</a></li>
-          <li><a href="#authentication">Authentication</a></li>
-          <li>
-            <a href="#endpoints">OpenAI API Endpoints</a>
-            <ul>
-              <li><a href="#models">Get Models</a></li>
-              <li><a href="#chat-completions">Chat Completions</a></li>
-            </ul>
-          </li>
-          <li><a href="#examples">Examples</a></li>
-          <li><a href="#error-handling">Error Handling</a></li>
-        </ul>
+        <div class="header-actions">
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle visual theme" title="Toggle theme">
+            <svg class="sun-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <svg class="moon-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+        </div>
       </div>
+    </header>
 
-      <section id="overview">
-        <h2>Overview</h2>
-        <p>
-          This is an OpenAI-compatible API proxy for Z.ai GLM-4.5, GLM-4.6, and GLM-4.5V models. It supports OpenAI API
-          format with streaming and non-streaming responses.
-        </p>
-        <p><strong>OpenAI Base URL:</strong> <code>http://localhost:9090/v1</code></p>
-        <div class="note">
-          <strong>Note:</strong> Default port is 9090 and can be changed via PORT environment variable.
-        </div>
-      </section>
+    <!-- Docs Layout -->
+    <div class="docs-layout">
+      <!-- Sidebar TOC -->
+      <aside class="docs-sidebar">
+        <nav class="sidebar-nav">
+          <div class="nav-group">
+            <span class="nav-group-title">Getting Started</span>
+            <a href="#overview" class="sidebar-link active">Overview</a>
+            <a href="#authentication" class="sidebar-link">Authentication</a>
+            <a href="#quickstart" class="sidebar-link">Quickstart Examples</a>
+          </div>
 
-      <section id="authentication">
-        <h2>Authentication</h2>
-        <p>All API requests must include a valid API key in the request header:</p>
-        <div class="example">
-          <strong>Authentication:</strong>
-          Authorization: Bearer your-api-key
-        </div>
-        <p>
-          The default API key is <code>sk-your-key</code>. Change it with the <code>DEFAULT_KEY</code> environment
-          variable.
-        </p>
-      </section>
+          <div class="nav-group">
+            <span class="nav-group-title">OpenAI API</span>
+            <a href="#openai-chat" class="sidebar-link">POST /v1/chat/completions</a>
+            <a href="#openai-models" class="sidebar-link">GET /v1/models</a>
+          </div>
 
-      <section id="endpoints">
-        <h2>OpenAI API Endpoints</h2>
+          <div class="nav-group">
+            <span class="nav-group-title">Anthropic Claude API</span>
+            <a href="#anthropic-messages" class="sidebar-link">POST /anthropic/v1/messages</a>
+            <a href="#anthropic-models" class="sidebar-link">GET /anthropic/v1/models</a>
+            <a href="#anthropic-count" class="sidebar-link">POST /anthropic/v1/messages/count_tokens</a>
+          </div>
 
-        <div class="endpoint" id="models">
-          <h3>Get Models</h3>
-          <div>
-            <span class="method get">GET</span>
-            <span class="path">/v1/models</span>
+          <div class="nav-group">
+            <span class="nav-group-title">Advanced Features</span>
+            <a href="#thinking-modes" class="sidebar-link">Thinking & Reasoning Tags</a>
+            <a href="#multimodal" class="sidebar-link">Multimodal Vision Support</a>
+            <a href="#models-matrix" class="sidebar-link">Model Specs & Context Limits</a>
+            <a href="#telemetry-api" class="sidebar-link">Telemetry Endpoints</a>
           </div>
-          <div class="description">
-            <p>Returns the list of available models.</p>
-          </div>
-          <div class="parameters">
-            <h4>Request Parameters</h4>
-            <p>None</p>
-          </div>
-          <div class="response">
-            { "object": "list", "data": [ { "id": "GLM-4.5", "object": "model", "created": 1756788845, "owned_by":
-            "z.ai" } ] }
-          </div>
-        </div>
+        </nav>
+      </aside>
 
-        <div class="endpoint" id="chat-completions">
-          <h3>Chat Completions</h3>
-          <div>
-            <span class="method post">POST</span>
-            <span class="path">/v1/chat/completions</span>
-          </div>
-          <div class="description">
-            <p>Generate model responses from a list of messages. Supports streaming and non-streaming modes.</p>
-          </div>
-          <div class="parameters">
-            <h4>Request Parameters</h4>
-            <table>
-              <thead>
-                <tr>
-                  <th>Parameter</th>
-                  <th>Type</th>
-                  <th>Required</th>
-                  <th>Description</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>model</td>
-                  <td>string</td>
-                  <td>yes</td>
-                  <td>Model ID to use, e.g. "GLM-4.5"</td>
-                </tr>
-                <tr>
-                  <td>messages</td>
-                  <td>array</td>
-                  <td>yes</td>
-                  <td>List of messages containing role and content</td>
-                </tr>
-                <tr>
-                  <td>stream</td>
-                  <td>boolean</td>
-                  <td>no</td>
-                  <td>Whether to use streaming responses; default true</td>
-                </tr>
-                <tr>
-                  <td>temperature</td>
-                  <td>number</td>
-                  <td>no</td>
-                  <td>Sampling temperature to control randomness</td>
-                </tr>
-                <tr>
-                  <td>max_tokens</td>
-                  <td>integer</td>
-                  <td>no</td>
-                  <td>Maximum tokens to generate</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="parameters">
-            <h4>Message Format</h4>
-            <table>
-              <thead>
-                <tr>
-                  <th>Field</th>
-                  <th>Type</th>
-                  <th>Description</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>role</td>
-                  <td>string</td>
-                  <td>Message role: system, user, assistant</td>
-                </tr>
-                <tr>
-                  <td>content</td>
-                  <td>string</td>
-                  <td>Message content</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
+      <!-- Main Docs Content -->
+      <main class="docs-main">
+        <!-- Overview -->
+        <section id="overview" class="doc-section">
+          <div class="section-tag">Gateway Architecture</div>
+          <h1>ZaiProxy API Documentation</h1>
+          <p class="lead-text">
+            ZaiProxy provides a zero-overhead, drop-in API translation gateway for Z.ai's cutting-edge GLM models. It natively exposes both OpenAI-compliant endpoints (<code>/v1/</code>) and Anthropic Claude-compliant endpoints (<code>/anthropic/v1/</code>).
+          </p>
 
-      <section id="examples">
-        <h2>Examples</h2>
-
-        <div class="tab">
-          <button class="tablinks active" onclick="openTab(event, 'python-tab')">Python</button>
-          <button class="tablinks" onclick="openTab(event, 'curl-tab')">cURL</button>
-          <button class="tablinks" onclick="openTab(event, 'javascript-tab')">JavaScript</button>
-        </div>
-
-        <div id="python-tab" class="tabcontent" style="display: block">
-          <h3>Python Example</h3>
-          <div class="example">
-            import openai # Configure client client = openai.OpenAI( api_key="your-api-key", # corresponds to
-            DEFAULT_KEY base_url="http://localhost:9090/v1" ) # Non-streaming example - GLM-4.5 response =
-            client.chat.completions.create( model="GLM-4.5", messages=[{"role": "user", "content": "Hello, please
-            introduce yourself"}] ) print(response.choices[0].message.content)
+          <div class="callout callout-info">
+            <div class="callout-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+            </div>
+            <div class="callout-body">
+              <strong>Base URLs:</strong><br>
+              OpenAI Base URL: <code>http://localhost:9090/v1</code><br>
+              Anthropic Base URL: <code>http://localhost:9090/anthropic</code>
+            </div>
           </div>
-        </div>
+        </section>
 
-        <div id="curl-tab" class="tabcontent">
-          <h3>cURL Example</h3>
-          <div class="example">
-            # Non-streaming curl -X POST http://localhost:9090/v1/chat/completions \ -H "Content-Type: application/json"
-            \ -H "Authorization: Bearer your-api-key" \ -d '{ "model": "GLM-4.5", "messages": [{"role": "user",
-            "content": "Hello"}], "stream": false }' # Streaming curl -X POST http://localhost:9090/v1/chat/completions
-            \ -H "Content-Type: application/json" \ -H "Authorization: Bearer your-api-key" \ -d '{ "model": "GLM-4.5",
-            "messages": [{"role": "user", "content": "Hello"}], "stream": true }'
+        <!-- Authentication -->
+        <section id="authentication" class="doc-section">
+          <h2>Authentication</h2>
+          <p>All client requests must pass an authorization key using either standard HTTP Bearer token or Anthropic API key header:</p>
+
+          <div class="code-wrapper">
+            <div class="code-banner">
+              <span>Headers</span>
+              <button class="btn-copy" data-target="code-auth">Copy</button>
+            </div>
+            <pre><code id="code-auth"># Standard OpenAI SDK Header
+Authorization: Bearer sk-your-key
+
+# Anthropic Claude SDK Header
+x-api-key: sk-your-key
+anthropic-version: 2023-06-01</code></pre>
           </div>
-        </div>
 
-        <div id="javascript-tab" class="tabcontent">
-          <h3>JavaScript Example</h3>
-          <div class="example">
-            const fetch = require('node-fetch'); async function chatWithGLM(message, stream = false) { const response =
-            await fetch('http://localhost:9090/v1/chat/completions', { method: 'POST', headers: { 'Content-Type':
-            'application/json', 'Authorization': 'Bearer your-api-key' }, body: JSON.stringify({ model: 'GLM-4.5',
-            messages: [{ role: 'user', content: message }], stream: stream }) }); if (stream) { const reader =
-            response.body.getReader(); const decoder = new TextDecoder(); while (true) { const { done, value } = await
-            reader.read(); if (done) break; const chunk = decoder.decode(value); const lines = chunk.split('\n'); for
-            (const line of lines) { if (line.startsWith('data: ')) { const data = line.slice(6); if (data === '[DONE]')
-            { console.log('\nStream complete'); return; } try { const parsed = JSON.parse(data); const content =
-            parsed.choices[0]?.delta?.content; if (content) { process.stdout.write(content); } } catch (e) { // ignore
-            parse errors } } } } } else { const data = await response.json();
-            console.log(data.choices[0].message.content); } } // Example usage chatWithGLM('Hello, please introduce
-            JavaScript', false);
+          <p class="text-secondary">
+            By default, any Bearer token matching the <code>DEFAULT_KEY</code> environment variable is accepted. If no upstream token is configured in <code>.env</code>, ZaiProxy automatically provisions and manages an anonymous guest session pool.
+          </p>
+        </section>
+
+        <!-- Quickstart -->
+        <section id="quickstart" class="doc-section">
+          <h2>Quickstart Integration</h2>
+
+          <h3>Python (OpenAI SDK)</h3>
+          <div class="code-wrapper">
+            <div class="code-banner">
+              <span>python</span>
+              <button class="btn-copy" data-target="code-py-openai">Copy</button>
+            </div>
+            <pre><code id="code-py-openai">from openai import OpenAI
+
+client = OpenAI(
+    base_url="http://localhost:9090/v1",
+    api_key="sk-your-key"
+)
+
+response = client.chat.completions.create(
+    model="GLM-5.3-Flash",
+    messages=[{"role": "user", "content": "Write an efficient binary search algorithm in TypeScript."}],
+    stream=True
+)
+
+for chunk in response:
+    content = chunk.choices[0].delta.content or ""
+    print(content, end="", flush=True)</code></pre>
           </div>
-        </div>
-      </section>
 
-      <section id="error-handling">
-        <h2>Error Handling</h2>
-        <p>The API uses standard HTTP status codes to denote success or failure:</p>
-        <table>
-          <thead>
-            <tr>
-              <th>Status</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>200 OK</td>
-              <td>Request succeeded</td>
-            </tr>
-            <tr>
-              <td>400 Bad Request</td>
-              <td>Request malformed or invalid parameters</td>
-            </tr>
-            <tr>
-              <td>401 Unauthorized</td>
-              <td>API key invalid or missing</td>
-            </tr>
-            <tr>
-              <td>502 Bad Gateway</td>
-              <td>Upstream service error</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="note">
-          <strong>Note:</strong> In debug mode the server logs detailed information. Enable with DEBUG_MODE=true.
-        </div>
-      </section>
+          <h3>Python (Anthropic SDK)</h3>
+          <div class="code-wrapper">
+            <div class="code-banner">
+              <span>python</span>
+              <button class="btn-copy" data-target="code-py-anthropic">Copy</button>
+            </div>
+            <pre><code id="code-py-anthropic">import anthropic
+
+client = anthropic.Anthropic(
+    base_url="http://localhost:9090/anthropic",
+    api_key="sk-your-key"
+)
+
+with client.messages.stream(
+    model="GLM-5.3-Flash",
+    max_tokens=2048,
+    messages=[{"role": "user", "content": "Explain reactive programming principles."}]
+) as stream:
+    for text in stream.text_stream:
+        print(text, end="", flush=True)</code></pre>
+          </div>
+        </section>
+
+        <!-- OpenAI Endpoints -->
+        <section id="openai-chat" class="doc-section">
+          <h2>OpenAI Chat Completions</h2>
+          <div class="endpoint-badge-row">
+            <span class="method-tag post">POST</span>
+            <span class="endpoint-url font-mono">/v1/chat/completions</span>
+          </div>
+          <p>Generates chat completions from messages. Supports streaming (Server-Sent Events) and non-streaming responses.</p>
+
+          <h3>Request Parameters</h3>
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th>Parameter</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="font-mono">model</td>
+                <td>string</td>
+                <td>Yes</td>
+                <td>Model ID, e.g. <code>GLM-5.3-Flash</code>, <code>GLM-5.3</code>, <code>GLM-5.2</code>.</td>
+              </tr>
+              <tr>
+                <td class="font-mono">messages</td>
+                <td>array</td>
+                <td>Yes</td>
+                <td>Array of message objects with <code>role</code> and <code>content</code>.</td>
+              </tr>
+              <tr>
+                <td class="font-mono">stream</td>
+                <td>boolean</td>
+                <td>No</td>
+                <td>Whether to stream chunks via SSE. Defaults to <code>true</code>.</td>
+              </tr>
+              <tr>
+                <td class="font-mono">temperature</td>
+                <td>number</td>
+                <td>No</td>
+                <td>Sampling temperature between 0.0 and 1.0.</td>
+              </tr>
+              <tr>
+                <td class="font-mono">max_tokens</td>
+                <td>integer</td>
+                <td>No</td>
+                <td>Maximum output tokens to generate.</td>
+              </tr>
+              <tr>
+                <td class="font-mono">tools</td>
+                <td>array</td>
+                <td>No</td>
+                <td>List of tool functions forwarded to model.</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- OpenAI Models -->
+        <section id="openai-models" class="doc-section">
+          <h2>OpenAI List Models</h2>
+          <div class="endpoint-badge-row">
+            <span class="method-tag get">GET</span>
+            <span class="endpoint-url font-mono">/v1/models</span>
+          </div>
+          <p>Returns the full list of available OpenAI-compatible models with their respective context limits.</p>
+        </section>
+
+        <!-- Anthropic Messages -->
+        <section id="anthropic-messages" class="doc-section">
+          <h2>Anthropic Messages API</h2>
+          <div class="endpoint-badge-row">
+            <span class="method-tag post">POST</span>
+            <span class="endpoint-url font-mono">/anthropic/v1/messages</span>
+          </div>
+          <p>Processes requests following the Anthropic Claude Messages protocol, automatically converting parameters and translating responses.</p>
+        </section>
+
+        <!-- Anthropic Models -->
+        <section id="anthropic-models" class="doc-section">
+          <h2>Anthropic List Models</h2>
+          <div class="endpoint-badge-row">
+            <span class="method-tag get">GET</span>
+            <span class="endpoint-url font-mono">/anthropic/v1/models</span>
+          </div>
+          <p>Returns active supported models (<code>GLM-5.3-Flash</code>, <code>GLM-5.3</code>, <code>GLM-5.2</code>) compatible with Anthropic SDK clients.</p>
+        </section>
+
+        <!-- Anthropic Token Count -->
+        <section id="anthropic-count" class="doc-section">
+          <h2>Anthropic Count Tokens</h2>
+          <div class="endpoint-badge-row">
+            <span class="method-tag post">POST</span>
+            <span class="endpoint-url font-mono">/anthropic/v1/messages/count_tokens</span>
+          </div>
+          <p>Estimates input tokens for a prompt before sending a full completion request.</p>
+        </section>
+
+        <!-- Thinking Modes -->
+        <section id="thinking-modes" class="doc-section">
+          <h2>Thinking & Reasoning Tags</h2>
+          <p>GLM-5.3 models generate internal reasoning deliberation. Control how thinking content is returned via the <code>X-Think-Tags-Mode</code> header:</p>
+
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th>Mode</th>
+                <th>Header Value</th>
+                <th>Behavior</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="font-mono">thinking</td>
+                <td><code>X-Think-Tags-Mode: thinking</code></td>
+                <td>Converts upstream <code>&lt;details&gt;</code> into <code>&lt;thinking&gt;...&lt;/thinking&gt;</code> tags.</td>
+              </tr>
+              <tr>
+                <td class="font-mono">strip</td>
+                <td><code>X-Think-Tags-Mode: strip</code></td>
+                <td>Strips all reasoning blocks and returns only final text answer.</td>
+              </tr>
+              <tr>
+                <td class="font-mono">think</td>
+                <td><code>X-Think-Tags-Mode: think</code></td>
+                <td>Converts deliberation into standard <code>&lt;think&gt;...&lt;/think&gt;</code> tags.</td>
+              </tr>
+              <tr>
+                <td class="font-mono">separate</td>
+                <td><code>X-Think-Tags-Mode: separate</code></td>
+                <td>Emits reasoning into the <code>delta.reasoning_content</code> field (DeepSeek format).</td>
+              </tr>
+              <tr>
+                <td class="font-mono">raw</td>
+                <td><code>X-Think-Tags-Mode: raw</code></td>
+                <td>Preserves upstream HTML tags untouched.</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- Multimodal -->
+        <section id="multimodal" class="doc-section">
+          <h2>Multimodal Vision Support</h2>
+          <p>The <code>GLM-5.3-Flash</code> model accepts vision payloads formatted in standard OpenAI image_url structures:</p>
+
+          <div class="code-wrapper">
+            <div class="code-banner">
+              <span>json</span>
+              <button class="btn-copy" data-target="code-vision">Copy</button>
+            </div>
+            <pre><code id="code-vision">{
+  "model": "GLM-5.3-Flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {"type": "text", "text": "Describe this architecture diagram in detail:"},
+        {"type": "image_url", "image_url": {"url": "data:image/png;base64,..."}}
+      ]
+    }
+  ]
+}</code></pre>
+          </div>
+        </section>
+
+        <!-- Model Specs Matrix -->
+        <section id="models-matrix" class="doc-section">
+          <h2>Model Specs & Context Limits</h2>
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th>Model ID</th>
+                <th>Context Window</th>
+                <th>Max Output</th>
+                <th>Capabilities</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="font-mono font-bold text-accent">GLM-5.3-Flash</td>
+                <td>1,000,000</td>
+                <td>128,000</td>
+                <td>Fast Reasoning, Thinking, Multimodal Vision, Tool Call</td>
+              </tr>
+              <tr>
+                <td class="font-mono font-bold">GLM-5.3</td>
+                <td>1,000,000</td>
+                <td>128,000</td>
+                <td>Frontier Reasoning, Autonomous Agent</td>
+              </tr>
+              <tr>
+                <td class="font-mono font-bold">GLM-5.2</td>
+                <td>1,000,000</td>
+                <td>64,064</td>
+                <td>High-Performance Reasoning, Code</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <!-- Telemetry API -->
+        <section id="telemetry-api" class="doc-section">
+          <h2>Telemetry & Stats Endpoints</h2>
+          <p>For custom monitoring and automated health checks:</p>
+          <div class="endpoint-badge-row">
+            <span class="method-tag get">GET</span>
+            <span class="endpoint-url font-mono">/dashboard/stats</span>
+          </div>
+          <p>Returns JSON object with <code>totalRequests</code>, <code>successfulRequests</code>, <code>failedRequests</code>, and <code>averageResponseTime</code>.</p>
+
+          <div class="endpoint-badge-row" style="margin-top: 16px;">
+            <span class="method-tag get">GET</span>
+            <span class="endpoint-url font-mono">/dashboard/requests</span>
+          </div>
+          <p>Returns array of the most recent requests with timestamps, paths, durations, and HTTP status codes.</p>
+        </section>
+      </main>
     </div>
 
-    <script>
-      // Dark mode toggle
-      const themeToggle = document.getElementById("themeToggle");
-      const body = document.body;
-      const sunIcon = themeToggle.querySelector(".sun-icon");
-      const moonIcon = themeToggle.querySelector(".moon-icon");
+    <!-- Toast -->
+    <div class="toast" id="toastNotification"></div>
 
-      // Check for saved theme preference
-      const savedTheme = localStorage.getItem("theme");
-      if (savedTheme === "dark") {
-        body.classList.add("dark-mode");
-        sunIcon.style.display = "none";
-        moonIcon.style.display = "block";
-      }
-
-      themeToggle.addEventListener("click", () => {
-        body.classList.toggle("dark-mode");
-        const isDark = body.classList.contains("dark-mode");
-
-        sunIcon.style.display = isDark ? "none" : "block";
-        moonIcon.style.display = isDark ? "block" : "none";
-
-        localStorage.setItem("theme", isDark ? "dark" : "light");
-      });
-
-      // Add loading animation
-      window.addEventListener("load", () => {
-        body.classList.add("loaded");
-      });
-    </script>
     <script src="/ui/docs/docs.js"></script>
   </body>
 </html>

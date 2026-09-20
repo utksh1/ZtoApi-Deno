@@ -6,7 +6,7 @@
 
 import { CONFIG, ZAI_TOKEN } from "../config/constants.ts";
 import { logger } from "../utils/logger.ts";
-import type { TokenInfo } from "../types/common.ts";
+import type { TokenInfo } from "../types/definitions.ts";
 import { getAnonymousToken } from "./anonymous-token.ts";
 
 export type TokenType = "user" | "guest" | "unknown";

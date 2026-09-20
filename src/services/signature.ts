@@ -20,9 +20,8 @@ export async function generateSignature(
 ): Promise<{ signature: string; timestamp: string }> {
   const timestampStr = String(timestamp);
 
-  // 1. Base64 encode the message content
-  const bodyEncoded = new TextEncoder().encode(t);
-  const bodyBase64 = btoa(String.fromCharCode(...bodyEncoded));
+  // 1. Base64 encode the message content (safe for arbitrarily large strings)
+  const bodyBase64 = btoa(unescape(encodeURIComponent(t)));
 
   // 2. Construct the string to sign
   const stringToSign = `${e}|${bodyBase64}|${timestampStr}`;

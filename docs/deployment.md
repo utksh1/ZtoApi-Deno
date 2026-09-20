@@ -1,6 +1,6 @@
 # 🚀 Deployment
 
-ZtoApi can be deployed in multiple ways to suit your needs.
+ZaiProxy can be deployed in multiple ways to suit your needs.
 
 ## ☁️ Deno Deploy
 
@@ -29,17 +29,17 @@ Default port: 9090 (override with PORT env var)
 Want to compile it or use Docker?
 
 ```bash
-deno compile --allow-net --allow-env --allow-read --output ztoapi main.ts
+deno compile --allow-net --allow-env --allow-read --output ztoapi src/server/router.ts
 ```
 
 Dockerfile example:
 
 ```dockerfile
-FROM denoland/deno:1.40.0
+FROM denoland/deno:latest
 WORKDIR /app
-COPY main.ts anthropic.ts ./
+COPY . .
 EXPOSE 9090
-CMD ["deno", "run", "--allow-net", "--allow-env", "--allow-read", "main.ts"]
+CMD ["deno", "run", "--allow-net", "--allow-env", "--allow-read", "src/server/router.ts"]
 ```
 
 Build and run:

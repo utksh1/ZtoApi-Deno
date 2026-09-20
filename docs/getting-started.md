@@ -1,32 +1,76 @@
 # 🚀 Getting Started
 
-This guide will help you set up ZtoApi and make your first API call.
+This guide will help you set up ZaiProxy and make your first API call.
 
-## 🔑 Getting a Z.ai API Token
+## 🔑 Authentication Options
 
-1. 🌐 Visit https://chat.z.ai and sign up / log in
-2. 🔍 Find your API token in the developer or account settings
-3. ⚙️ Set the token as the ZAI_TOKEN environment variable
+ZaiProxy supports **4 authentication modes**:
+
+### 1. JWT Token (Recommended - Unlimited Usage!)
+
+Get unlimited access using your web session token:
+
+1. 🌐 Visit https://chat.z.ai and log in
+2. 🔍 Open Developer Tools (F12) → Console tab
+3. 💻 Type: `localStorage.getItem('token')`
+4. 📋 Copy the token (starts with `eyJ...`)
+5. ⚙️ Set environment variable:
+   ```bash
+   export ZAI_JWT_TOKEN="eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9..."
+   ```
+
+### 2. Session Cookie (Alternative Web Session)
+
+Extract session cookie from browser:
+
+1. 🌐 Visit https://chat.z.ai and log in
+2. 🔍 Open Developer Tools (F12) → Application/Storage tab
+3. 🍪 Find cookies for chat.z.ai
+4. 📋 Copy the session cookie value
+5. ⚙️ Set environment variable:
+   ```bash
+   export ZAI_SESSION_TOKEN="your_session_cookie"
+   ```
+
+### 3. API Token (Traditional - Quota Limited)
+
+Use official API token (limited by quota):
+
+1. 🌐 Visit https://chat.z.ai and get your API token
+2. ⚙️ Set environment variable:
+   ```bash
+   export ZAI_TOKEN="your_api_token"
+   ```
+
+### 4. Anonymous (Guest Access - Limited)
+
+No configuration needed, but responses may be limited.
 
 ## ⚙️ Environment Variables
 
 Customize your experience with these settings:
 
+- `ZAI_JWT_TOKEN` — JWT token from chat.z.ai (recommended for unlimited usage) 🔑
+- `ZAI_SESSION_TOKEN` — Session cookie from browser (alternative) 🍪
+- `ZAI_TOKEN` — Official Z.ai API token (quota-limited) 🎟️
 - `DEFAULT_KEY` — API key for clients (default: sk-your-key) 🔑
-- `ZAI_TOKEN` — official Z.ai API token (required for multimodal) 🎟️
-- `UPSTREAM_URL` — upstream Z.ai endpoint (default: https://chat.z.ai/api/chat/completions) 🔗
-- `DEBUG_MODE` — enable debug logs (true/false, default: true) 🐛
-- `DEFAULT_STREAM` — default streaming mode (true/false, default: true) 🌊
-- `DASHBOARD_ENABLED` — enable dashboard (true/false, default: true) 📊
-- `PORT` — server port (default: 9090) 🌐
-- `DEFAULT_LANGUAGE` — default language for Accept-Language headers and date formatting (default: en-US, examples: zh-CN, fr-FR) 🌍
-- `ZAI_SIGNING_SECRET` — custom key for request signature generation (optional, uses secure default if not set) 🔐
+- `UPSTREAM_URL` — Upstream Z.ai endpoint (default: https://chat.z.ai/api/chat/completions) 🔗
+- `DEBUG_MODE` — Enable debug logs (true/false, default: true) 🐛
+- `DEFAULT_STREAM` — Default streaming mode (true/false, default: true) 🌊
+- `DASHBOARD_ENABLED` — Enable dashboard (true/false, default: true) 📊
+- `PORT` — Server port (default: 9090) 🌐
+- `DEFAULT_LANGUAGE` — Default language for Accept-Language headers (default: en-US) 🌍
+- `ZAI_SIGNING_SECRET` — Custom key for request signature generation (optional) 🔐
 
 ## 🔐 New Features and Configuration
 
+### Session-Based Authentication
+
+ZaiProxy now supports session-based authentication like Conduit for ChatGPT. Use JWT tokens or session cookies from chat.z.ai for unlimited usage without API quota limits.
+
 ### Enhanced Request Signature
 
-ZtoApi now uses an updated dual-layer HMAC-SHA256 signature algorithm with Base64 encoding for enhanced security. Set `ZAI_SIGNING_SECRET` to customize the signature key. For detailed information, see [signature-update-guide.md](../signature-update-guide.md).
+ZaiProxy uses an updated dual-layer HMAC-SHA256 signature algorithm with Base64 encoding for enhanced security. Set `ZAI_SIGNING_SECRET` to customize the signature key. For detailed information, see [signature-update-guide.md](../signature-update-guide.md).
 
 ### Token Pool Management
 
@@ -34,7 +78,7 @@ The server includes automatic token pool management for handling API tokens effi
 
 ### Multimodal Support
 
-Enhanced support for images, videos, documents, and audio in requests. Ensure `ZAI_TOKEN` is set for full multimodal capabilities.
+Enhanced support for images, videos, documents, and audio in requests. Works with all authentication modes.
 
 ## 🧪 Quick Local Test
 
@@ -68,7 +112,7 @@ curl -X POST http://localhost:9090/anthropic/v1/messages \
 
 ## 🛠️ Getting Started with Tool Calling
 
-ZtoApi includes native tool calling support that allows AI models to execute server-side functions. Here's how to get started:
+ZaiProxy includes native tool calling support that allows AI models to execute server-side functions. Here's how to get started:
 
 ### Basic Tool Calling Example
 

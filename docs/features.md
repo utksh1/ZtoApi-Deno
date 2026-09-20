@@ -1,10 +1,10 @@
 # ✨ Features
 
-Advanced features and configuration options for ZtoApi.
+Advanced features and configuration options for ZaiProxy.
 
 ## 🛠️ Native Tool Calling System
 
-ZtoApi includes a comprehensive native tool calling system that allows AI models to execute predefined server-side functions. This enables richer interactions beyond text generation.
+ZaiProxy includes a comprehensive native tool calling system that allows AI models to execute predefined server-side functions. This enables richer interactions beyond text generation.
 
 ### Built-in Tools
 
@@ -355,7 +355,7 @@ print("Reasoning:", response.choices[0].message.reasoning_content)
 
 ### Dual-Layer HMAC-SHA256 Signature
 
-ZtoApi now uses an advanced signature mechanism for all upstream requests:
+ZaiProxy now uses an advanced signature mechanism for all upstream requests:
 
 - **Base64 Encoding**: Request bodies are Base64 encoded for secure transmission.
 - **Dual-Layer HMAC**: Two-stage HMAC-SHA256 process for enhanced security.

@@ -6,11 +6,18 @@ Overview of supported models and their capabilities.
 
 **Base URL**: `http://localhost:9090/v1`
 
-| Model ID         | GLM Model | Capabilities                           | Description                   |
-| ---------------- | --------- | -------------------------------------- | ----------------------------- |
-| `0727-360B-API`  | GLM-4.5   | Text, Code, Native Tools, MCP          | Balanced performance model 📝 |
-| `GLM-4-6-API-V1` | GLM-4.6   | Text, Code, Native Tools, MCP          | **🧠✨ Smartest model!**      |
-| `glm-4.5v`       | GLM-4.5V  | Multimodal (Image, Video, Audio, Docs) | 🎥🖼️🎵 Full multimodal        |
+| Model ID        | GLM Model     | Capabilities                                      | Description                                     |
+| --------------- | ------------- | ------------------------------------------------- | ----------------------------------------------- |
+| `GLM-5.3-Flash` | GLM-5.3-Flash | Vision, Reasoning Effort, Thinking, Search, Tools | **⚡ LATEST Flagship!** Instant high-quality 🚀 |
+| `GLM-5.3`       | GLM-5.3       | Reasoning Effort, Thinking, Search, Tools, MCP    | **🧠 Frontier Reasoning & Agentic Model!**      |
+| `GLM-5.2`       | GLM-5.2       | Reasoning Effort, Thinking, Search, Tools, MCP    | High performance reasoning model                |
+| `GLM-5-Turbo`   | GLM-5-Turbo   | Thinking, Search, Tools, MCP                      | High speed, efficient model                     |
+| `GLM-5V-Turbo`  | GLM-5V-Turbo  | Vision, Thinking, Search                          | Fast multimodal vision model                    |
+| `GLM-4.7`       | GLM-4.7       | Thinking, Search, Tools, MCP                      | Coding & agentic reasoning model                |
+| `GLM-4.6V`      | GLM-4.6V      | Vision, Thinking, Tools, MCP                      | Multimodal vision & reasoning                   |
+| `GLM-4.6`       | GLM-4.6       | Text, Code, Native Tools, MCP (195K Context)      | High capability coding model                    |
+| `0727-360B-API` | GLM-4.5       | Text, Code, Native Tools, MCP                     | Legacy GLM-4.5 base model                       |
+| `glm-4.5v`      | GLM-4.5V      | Multimodal (Image, Video, Audio, Docs)            | Legacy full multimodal model                    |
 
 ## 🎭 **Anthropic Claude-Compatible API** → `/anthropic/v1/` endpoints
 
@@ -69,6 +76,14 @@ Overview of supported models and their capabilities.
 
 ## 🎯 Model Capabilities
 
+### GLM-5.3-Flash & GLM-5.3 ⚡ **LATEST Flagships!**
+
+- **Massive 1,000,000 (1 Million) token context window** 🚀
+- Up to 128,000 max completion tokens
+- Frontier reasoning & thinking chain (`reasoning_effort`, `reasoning_content`)
+- Direct browser bridge support bypassing web anti-bot challenges
+- Ultra-low latency response times
+
 ### GLM-4.5 (0727-360B-API) 🧠
 
 - Thinking/chain-of-thought display 💭
@@ -103,7 +118,7 @@ Overview of supported models and their capabilities.
 
 ### Native Tool Calling
 
-ZtoApi provides native tool calling that works across all models:
+ZaiProxy provides native tool calling that works across all models:
 
 - **GLM-4.5 & GLM-4.6**: Full native tool calling support with all built-in tools
 - **GLM-4.5V**: Basic tool calling support (time, hash, calculate, fetch)

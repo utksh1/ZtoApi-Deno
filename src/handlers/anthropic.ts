@@ -10,27 +10,16 @@ import {
   convertOpenAIToAnthropic,
   countTokens,
   getClaudeModels,
-} from "../../anthropic.ts";
-import type { Message, UpstreamRequest } from "../types/definitions.ts";
+  processAnthropicStream,
+} from "../anthropic/core.ts";
+import type { Message, ToolCall, UpstreamRequest } from "../types/definitions.ts";
 import { getModelConfig } from "../config/models.ts";
 import { addLiveRequest, recordRequestStats } from "../utils/stats.ts";
-import { setCORSHeaders } from "../utils/helpers.ts";
-import { processMessages, validateTools } from "../utils/validation.ts";
-import { getAnonymousToken } from "../services/anonymous-token.ts";
-import { callUpstreamWithHeaders } from "../services/upstream-caller.ts";
-import { collectFullResponse, processUpstreamStream } from "../utils/stream.ts";
-
-/**
- * Debug logging function - will be injected
- */
-let debugLog: (format: string, ...args: unknown[]) => void = () => {};
-
-/**
- * Set the debug logger (called from main)
- */
-export function setDebugLogger(logger: (format: string, ...args: unknown[]) => void) {
-  debugLog = logger;
-}
+import { setCORSHeaders, validateApiKey } from "../utils/helpers.ts";
+import { processMessages } from "../utils/validation.ts";
+import { getUpstreamClient } from "../services/upstream-client.ts";
+import { collectFullResponse } from "../utils/stream.ts";
+import { debugLog } from "../utils/logger.ts";
 
 /**
  * Handle Anthropic models endpoint
@@ -77,7 +66,7 @@ export async function handleAnthropicMessages(request: Request): Promise<Respons
     debugLog("Missing or invalid Authorization header for Anthropic API");
     const duration = Date.now() - startTime;
     recordRequestStats(startTime, path, 401);
-    addLiveRequest(request.method, path, 401, duration, userAgent);
+    addLiveRequest(request.method, path, 401, duration, userAgent, undefined, undefined, "Missing or invalid API key");
     return new Response(
       JSON.stringify({
         type: "error",
@@ -94,12 +83,11 @@ export async function handleAnthropicMessages(request: Request): Promise<Respons
   }
 
   const apiKey = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
-  const { validateApiKey } = await import("../utils/helpers.ts");
   if (!validateApiKey(`Bearer ${apiKey}`)) {
     debugLog("Invalid API key for Anthropic request");
     const duration = Date.now() - startTime;
     recordRequestStats(startTime, path, 401);
-    addLiveRequest(request.method, path, 401, duration, userAgent);
+    addLiveRequest(request.method, path, 401, duration, userAgent, undefined, undefined, "Invalid API key");
     return new Response(
       JSON.stringify({
         type: "error",
@@ -126,7 +114,7 @@ export async function handleAnthropicMessages(request: Request): Promise<Respons
     debugLog("Failed to read Anthropic request body: %v", error);
     const duration = Date.now() - startTime;
     recordRequestStats(startTime, path, 400);
-    addLiveRequest(request.method, path, 400, duration, userAgent);
+    addLiveRequest(request.method, path, 400, duration, userAgent, undefined, undefined, "Failed to read request body");
     return new Response(
       JSON.stringify({
         type: "error",
@@ -151,7 +139,7 @@ export async function handleAnthropicMessages(request: Request): Promise<Respons
     debugLog("Anthropic JSON parse failed: %v", error);
     const duration = Date.now() - startTime;
     recordRequestStats(startTime, path, 400);
-    addLiveRequest(request.method, path, 400, duration, userAgent);
+    addLiveRequest(request.method, path, 400, duration, userAgent, undefined, undefined, "Invalid JSON");
     return new Response(
       JSON.stringify({
         type: "error",
@@ -167,70 +155,21 @@ export async function handleAnthropicMessages(request: Request): Promise<Respons
     );
   }
 
-  // Validate tools if present
-  if (anthropicReq.tools && anthropicReq.tools.length > 0) {
-    try {
-      // Convert Anthropic tools to OpenAI format for validation
-      const openaiTools = anthropicReq.tools.map((tool) => ({
-        type: "function" as const,
-        function: {
-          name: tool.name,
-          description: tool.description,
-          parameters: tool.input_schema,
-        },
-      }));
-      validateTools(openaiTools);
-      debugLog("✅ Anthropic tools validated successfully");
-    } catch (error) {
-      debugLog("Tool validation failed: %v", error);
-      const duration = Date.now() - startTime;
-      recordRequestStats(startTime, path, 400);
-      addLiveRequest(request.method, path, 400, duration, userAgent);
-      return new Response(
-        JSON.stringify({
-          type: "error",
-          error: {
-            type: "invalid_request_error",
-            message: error instanceof Error ? error.message : "Tool validation failed",
-          },
-        }),
-        {
-          status: 400,
-          headers: { ...headers, "Content-Type": "application/json" },
-        },
-      );
-    }
-  }
-
   // Convert to OpenAI format for processing
-  const model = anthropicReq.model || "claude-3-haiku-20240307";
+  const model = anthropicReq.model || "GLM-5.3-Flash";
   const modelConfig = getModelConfig(model);
   const openaiReq = convertAnthropicToOpenAI(anthropicReq);
+  const promptTokens = Math.max(1, Math.ceil(JSON.stringify(anthropicReq.messages || "").length / 4));
 
   debugLog("Converted to OpenAI format, model: %s", openaiReq.model);
 
   // Check if streaming
   const isStreaming = openaiReq.stream || false;
 
-  // Get token for upstream request
-  let authToken: string;
-  try {
-    authToken = await getAnonymousToken();
-  } catch (error) {
-    debugLog("Failed to get anonymous token: %v", error);
-    return new Response(
-      JSON.stringify({
-        type: "error",
-        error: {
-          type: "upstream_error",
-          message: "Failed to get authentication token",
-        },
-      }),
-      {
-        status: 500,
-        headers: { ...headers, "Content-Type": "application/json" },
-      },
-    );
+  // Get token for upstream request if provided
+  let clientToken: string | undefined = undefined;
+  if (apiKey && (apiKey.startsWith("eyJ") || apiKey.length > 50)) {
+    clientToken = apiKey;
   }
 
   // Process messages
@@ -240,14 +179,24 @@ export async function handleAnthropicMessages(request: Request): Promise<Respons
   } catch (error) {
     debugLog("Failed to process messages: %v", error);
     const duration = Date.now() - startTime;
+    const msg = error instanceof Error ? error.message : "Failed to process messages";
     recordRequestStats(startTime, path, 400);
-    addLiveRequest(request.method, path, 400, duration, userAgent);
+    addLiveRequest(
+      request.method,
+      path,
+      400,
+      duration,
+      userAgent,
+      model,
+      { prompt: promptTokens, total: promptTokens },
+      msg,
+    );
     return new Response(
       JSON.stringify({
         type: "error",
         error: {
           type: "invalid_request_error",
-          message: error instanceof Error ? error.message : "Failed to process messages",
+          message: msg,
         },
       }),
       {
@@ -271,20 +220,34 @@ export async function handleAnthropicMessages(request: Request): Promise<Respons
       thinking: modelConfig.capabilities.thinking,
       ...(modelConfig.capabilities.vision && { vision: true }),
     },
+    tools: openaiReq.tools as unknown as UpstreamRequest["tools"],
+    tool_choice:
+      (typeof openaiReq.tool_choice === "string" ? openaiReq.tool_choice : undefined) as UpstreamRequest["tool_choice"],
     chat_id: `chat_${Date.now()}_${Math.random().toString(36).substring(7)}`,
   };
 
   debugLog("Created upstream request: %s", JSON.stringify(upstreamReq, null, 2));
 
-  // Call upstream
+  // Call upstream using upstream client (supports browser bridge, session pooling, etc.)
   let response: Response;
   try {
-    response = await callUpstreamWithHeaders(upstreamReq, upstreamReq.chat_id!, authToken);
+    const upstreamClient = await getUpstreamClient();
+    response = await upstreamClient.chatCompletion(upstreamReq, modelConfig, clientToken);
   } catch (error) {
     debugLog("Upstream request failed: %v", error);
     const duration = Date.now() - startTime;
+    const errorMsg = error instanceof Error ? error.message : "Failed to connect to upstream service";
     recordRequestStats(startTime, path, 500);
-    addLiveRequest(request.method, path, 500, duration, userAgent);
+    addLiveRequest(
+      request.method,
+      path,
+      500,
+      duration,
+      userAgent,
+      model,
+      { prompt: promptTokens, total: promptTokens },
+      errorMsg,
+    );
     return new Response(
       JSON.stringify({
         type: "error",
@@ -303,7 +266,16 @@ export async function handleAnthropicMessages(request: Request): Promise<Respons
   // Record stats
   const duration = Date.now() - startTime;
   recordRequestStats(startTime, path, response.status);
-  addLiveRequest(request.method, path, response.status, duration, userAgent, model);
+  addLiveRequest(
+    request.method,
+    path,
+    response.status,
+    duration,
+    userAgent,
+    model,
+    { prompt: promptTokens, total: promptTokens },
+    !response.ok ? `HTTP ${response.status}` : undefined,
+  );
 
   // Convert response back to Anthropic format
   if (isStreaming) {
@@ -337,39 +309,40 @@ export async function handleAnthropicStreamResponse(
         headers: { ...headers, "Content-Type": "application/json" },
       },
     );
-    // Dummy await to satisfy lint
     await Promise.resolve();
     return response;
   }
 
   const encoder = new TextEncoder();
-  const stream = new TransformStream();
-  const writer = stream.writable.getWriter();
+  const requestId = `msg_${Date.now()}`;
 
   // Set up headers for streaming
   setCORSHeaders(headers);
-  headers.set("Content-Type", "text/event-stream");
-  headers.set("Cache-Control", "no-cache");
+  headers.set("Content-Type", "text/event-stream; charset=utf-8");
+  headers.set("Cache-Control", "no-cache, no-transform");
   headers.set("Connection", "keep-alive");
+  headers.set("X-Accel-Buffering", "no");
 
-  // Process the upstream stream
-  processUpstreamStream(
-    upstreamResponse.body,
-    writer,
-    encoder,
-    model,
-  ).catch((error) => {
-    debugLog("Error processing stream: %v", error);
+  const stream = new ReadableStream({
+    async start(controller) {
+      try {
+        for await (const chunk of processAnthropicStream(upstreamResponse.body!, model, requestId)) {
+          controller.enqueue(encoder.encode(chunk));
+        }
+        controller.close();
+      } catch (error) {
+        debugLog("Error processing stream: %v", error);
+        controller.error(error);
+      }
+    },
   });
 
-  const response = new Response(stream.readable, {
+  const response = new Response(stream, {
     status: upstreamResponse.status,
     headers,
   });
 
-  // Dummy await to satisfy lint
   await Promise.resolve();
-
   return response;
 }
 
@@ -391,7 +364,7 @@ export async function handleAnthropicNonStreamResponse(
         type: "error",
         error: {
           type: "upstream_error",
-          message: "Upstream service returned an error",
+          message: errorBody || "Upstream service returned an error",
         },
       }),
       {
@@ -401,24 +374,41 @@ export async function handleAnthropicNonStreamResponse(
     );
   }
 
-  if (!upstreamResponse.body) {
-    return new Response(
-      JSON.stringify({
-        type: "error",
-        error: {
-          type: "upstream_error",
-          message: "No response body from upstream",
-        },
-      }),
-      {
-        status: 500,
-        headers: { ...headers, "Content-Type": "application/json" },
-      },
-    );
-  }
-
   try {
-    const result = await collectFullResponse(upstreamResponse.body);
+    const contentType = upstreamResponse.headers.get("content-type") || "";
+    let content = "";
+    let reasoningContent: string | undefined;
+    let usage: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | undefined;
+    let toolCalls: ToolCall[] | undefined;
+    let finishReason = "stop";
+
+    if (contentType.includes("application/json")) {
+      const json = await upstreamResponse.json() as {
+        choices?: Array<{
+          message?: {
+            content?: string | null;
+            reasoning_content?: string;
+            tool_calls?: ToolCall[];
+          };
+          finish_reason?: string;
+        }>;
+        usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+      };
+      const choice = json.choices?.[0];
+      content = choice?.message?.content || "";
+      reasoningContent = choice?.message?.reasoning_content;
+      toolCalls = choice?.message?.tool_calls;
+      finishReason = choice?.finish_reason || (toolCalls && toolCalls.length > 0 ? "tool_calls" : "stop");
+      usage = json.usage;
+    } else if (upstreamResponse.body) {
+      const result = await collectFullResponse(upstreamResponse.body);
+      content = result.content;
+      reasoningContent = result.reasoning_content;
+      usage = result.usage || undefined;
+    } else {
+      throw new Error("No response body from upstream");
+    }
+
     const openaiResp = {
       id: `chatcmpl-${Date.now()}`,
       object: "chat.completion",
@@ -429,13 +419,14 @@ export async function handleAnthropicNonStreamResponse(
           index: 0,
           message: {
             role: "assistant",
-            content: result.content,
-            ...(result.reasoning_content && { reasoning_content: result.reasoning_content }),
+            content: content,
+            ...(reasoningContent ? { reasoning_content: reasoningContent } : {}),
+            ...(toolCalls && toolCalls.length > 0 ? { tool_calls: toolCalls } : {}),
           },
-          finish_reason: "stop",
+          finish_reason: finishReason,
         },
       ],
-      ...(result.usage && { usage: result.usage }),
+      ...(usage && { usage }),
     };
 
     const requestId = `msg_${Date.now()}`;

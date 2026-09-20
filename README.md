@@ -1,6 +1,6 @@
-# 🚀 ZtoApi - OpenAI & Anthropic Claude Compatible API Proxy! 🌟
+# 🚀 ZaiProxy - Z.ai Proxy with Session Support! 🌟
 
-> ✅ **FULLY IMPLEMENTED** - Complete OpenAI AND Anthropic Claude API support with dual endpoints!
+> ✅ **SESSION-BASED AUTHENTICATION** - Unlimited usage with JWT tokens from chat.z.ai web interface!
 
 ![Deno](https://img.shields.io/badge/deno-v1.40+-blue.svg)
 ![TypeScript](https://img.shields.io/badge/typescript-5.0+-blue.svg)
@@ -10,7 +10,7 @@
 
 > 🎓 For personal, non-commercial or educational use only. Please use responsibly! 🌈
 
-Hey there! 👋 Welcome to ZtoApi - your ultimate dual-API proxy that brings Z.ai's amazing GLM models to life through BOTH OpenAI AND Anthropic Claude compatible interfaces! ✨ Built with Deno's awesome native HTTP API, it supports streaming/non-streaming responses for both APIs, plus comes with a real-time monitoring dashboard! 😍
+Hey there! 👋 Welcome to ZaiProxy - your ultimate Z.ai proxy that brings GLM models to life through BOTH OpenAI AND Anthropic Claude compatible interfaces! ✨ Now with **session-based authentication** for unlimited usage using JWT tokens from chat.z.ai! Built with Deno's native HTTP API, it supports streaming/non-streaming responses for both APIs, plus comes with a real-time monitoring dashboard! 😍
 
 ## 🎯 **DUAL API SUPPORT** - Use Either Format!
 
@@ -22,6 +22,10 @@ Hey there! 👋 Welcome to ZtoApi - your ultimate dual-API proxy that brings Z.a
 
 ## 🌟 Key Features
 
+- 🔑 **Session-based authentication** — unlimited usage with JWT tokens from chat.z.ai! 🚀
+  - **4 authentication modes**: JWT (recommended), Session Cookie, API Token, Anonymous
+  - **No quota limits** — use your web session for unlimited access
+  - **Auto-detection** — automatically selects the best auth method
 - 🔄 **OpenAI API fully compatible** — use your existing OpenAI clients seamlessly! 🎯
 - 🎭 **Anthropic Claude API fully compatible** — use Claude Desktop, cline, cursor, and any Claude tools! 🤖
 - 🛠️ **Native tool calling support** — AI can execute server-side functions! 🔧
@@ -34,7 +38,6 @@ Hey there! 👋 Welcome to ZtoApi - your ultimate dual-API proxy that brings Z.a
 - 🌊 **SSE streaming support** for both APIs - real-time token delivery! ✨
 - 🧠 **Advanced thinking content processing** with 5 amazing modes
 - 📊 **Built-in web Dashboard** with live request stats for both APIs! 🎨
-- 🔐 **API key authentication** with optional anonymous token fallback 🛡️
 - ⚙️ **Configurable via environment variables** - make it yours! 🎛️
 - 🚀 **Deployable on Deno Deploy or self-hosted** - your choice! 🏠
 
@@ -75,9 +78,30 @@ Base paths:
 
 ## 🚀 Quick Start
 
-1. **Get a Z.ai API Token**: Visit https://chat.z.ai and get your token
-2. **Set Environment Variables**: Configure `ZAI_TOKEN` and other settings
-3. **Run Locally**: `deno run --allow-net --allow-env --allow-read main.ts`
+### Recommended: JWT Token Authentication (Unlimited Usage!)
+
+1. **Get your JWT token from chat.z.ai**:
+   - Open https://chat.z.ai in your browser
+   - Open Developer Tools (F12)
+   - Go to Console tab
+   - Type: `localStorage.getItem('token')`
+   - Copy the token (starts with `eyJ...`)
+
+2. **Set Environment Variable**:
+   ```bash
+   export ZAI_JWT_TOKEN="eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9..."
+   ```
+
+3. **Run the server**:
+   ```bash
+   deno run --allow-net --allow-env --allow-read main.ts
+   ```
+
+### Alternative: API Token (Limited by quota)
+
+1. Visit https://chat.z.ai and get your API token
+2. Set `ZAI_TOKEN` environment variable
+3. Run the server
 
 For detailed setup instructions, see [Getting Started](./docs/getting-started.md).
 
@@ -88,7 +112,7 @@ Include tools in your API requests and let the AI use them automatically:
 ```bash
 curl -X POST http://localhost:9090/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_ZAI_TOKEN" \
+  -H "Authorization: Bearer YOUR_JWT_OR_API_TOKEN" \
   -d '{
     "model": "GLM-4.5",
     "messages": [{"role": "user", "content": "What time is it?"}],
@@ -130,25 +154,32 @@ For comprehensive information, see our detailed documentation:
 
 ## 🏗️ Architecture
 
-ZtoApi now features a **modular architecture** for better maintainability:
+ZaiProxy features a **modular architecture** with session-based authentication:
 
 ```
 src/
+├── auth/         # Authentication (JWT, session cookies, API tokens)
 ├── config/       # Configuration & constants
-├── services/     # Business logic (token pool, signatures, image processing)
+├── services/     # Business logic (hybrid client, session manager, token pool)
 ├── types/        # TypeScript type definitions
 └── utils/        # Utility functions (logging, stats, helpers)
 ```
 
+**Authentication Modes:**
+
+- **JWT** (recommended): Unlimited usage with web session token
+- **Session Cookie**: Alternative web session format
+- **API Token**: Traditional API key (quota-limited)
+- **Anonymous**: Guest access (limited responses)
+
 **For developers:**
 
-- [📖 Migration Guide](./MIGRATION_GUIDE.md) - Guide to the new modular structure
-- [📋 Cleanup Summary](./CLEANUP_SUMMARY.md) - Detailed refactoring report
-- [🤖 AGENTS.md](./AGENTS.md) - Development guide for AI agents
+- [🤖 AGENTS.md](./AGENTS.md) - Development guide and architecture overview for AI agents
+- [📚 Full Documentation](./docs/README.md) - Comprehensive guides and API reference
 
 ## 🤝 Contributing
 
-Want to help make ZtoApi even better? We'd love your help! 💪
+Want to help make ZaiProxy even better? We'd love your help! 💪
 
 **Development Workflow:**
 
@@ -161,7 +192,7 @@ deno task check    # Type check
 ```
 
 - Open issues and pull requests on the project repository 🎉
-- Follow the [Migration Guide](./MIGRATION_GUIDE.md) for code structure
+- Follow [AGENTS.md](./AGENTS.md) for code style and development conventions
 - All PRs automatically run CI checks (lint, format, type check, tests)
 
 ## 📜 License
@@ -172,7 +203,7 @@ This project is released under the MIT License. See LICENSE for details. 📄
 
 ## 🌈 Thanks for reading!
 
-Hope you enjoy using ZtoApi as much as we enjoyed building it! If you have any questions or feedback, don't hesitate to reach out! 🤗✨
+Hope you enjoy using ZaiProxy as much as we enjoyed building it! If you have any questions or feedback, don't hesitate to reach out! 🤗✨
 
 Happy coding! (´｡• ᵕ •｡`) 💖
 
@@ -181,6 +212,7 @@ Happy coding! (´｡• ᵕ •｡`) 💖
 Special thanks to the amazing open-source community! This project was inspired by and includes code adapted from:
 
 - **[claude-proxy](https://github.com/simpx/claude-proxy)** by [simpx](https://github.com/simpx) - Claude API proxy implementation patterns and Anthropic API structure. Their excellent work provided the foundation for our Claude API compatibility layer! 🎭✨
+- **[conduit](https://github.com/utksh1/conduit)** - Session-based authentication architecture for ChatGPT web interface. Inspired our JWT and session cookie authentication system! 🔑✨
 
 ## 🌟 Key Contributors
 

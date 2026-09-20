@@ -1,6 +1,6 @@
 # 🔌 API Reference
 
-Complete documentation for all ZtoApi endpoints.
+Complete documentation for all ZaiProxy endpoints.
 
 ## 🌐 API Endpoints Overview
 
@@ -60,13 +60,24 @@ Note: Some features are model-dependent. For example, MCP tools are only availab
 
 ## 🔐 Security and Authentication
 
+### Authentication Modes
+
+ZaiProxy supports 4 authentication modes:
+
+1. **JWT Token** (recommended) - Unlimited usage with web session token
+2. **Session Cookie** - Alternative web session format
+3. **API Token** - Traditional API key (quota-limited)
+4. **Anonymous** - Guest access (limited responses)
+
+Set via environment variables: `ZAI_JWT_TOKEN`, `ZAI_SESSION_TOKEN`, or `ZAI_TOKEN`
+
 ### Request Signature
 
 All requests to the upstream Z.ai API are signed using a dual-layer HMAC-SHA256 algorithm with Base64 encoding for enhanced security. The signature is generated automatically and included in the request headers.
 
 ### Token Pool Management
 
-ZtoApi includes built-in token pool management for efficient handling of API tokens, supporting anonymous access and automatic token rotation. This ensures reliable operation without manual intervention.
+ZaiProxy includes built-in token pool management for efficient handling of API tokens, supporting anonymous access and automatic token rotation. This ensures reliable operation without manual intervention.
 
 For detailed configuration, see [Getting Started](../docs/getting-started.md) and [signature-update-guide.md](../signature-update-guide.md).
 

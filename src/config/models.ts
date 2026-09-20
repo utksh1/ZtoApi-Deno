@@ -4,7 +4,7 @@
 
 import { normalizeModelId } from "../utils/helpers.ts";
 import { logger } from "../utils/logger.ts";
-import type { ModelCapabilities } from "../types/common.ts";
+import type { ModelCapabilities } from "../types/definitions.ts";
 
 /**
  * Model configuration interface
@@ -13,13 +13,8 @@ export interface ModelConfig {
   id: string; // Model ID as exposed by API
   name: string; // Display name
   upstreamId: string; // Upstream Z.ai model ID
-  capabilities: {
-    vision: boolean;
-    mcp: boolean;
-    thinking: boolean;
-    search?: boolean;
-    advancedSearch?: boolean;
-  };
+  contextWindow?: number; // Context window in tokens (e.g., 1,000,000 for 1M)
+  capabilities: ModelCapabilities;
   defaultParams: {
     top_p: number;
     temperature: number;
@@ -28,194 +23,110 @@ export interface ModelConfig {
 }
 
 /**
- * Supported models configuration
+ * Supported models configuration based on live Z.ai models
  */
 export const SUPPORTED_MODELS: ModelConfig[] = [
   {
-    id: "0727-360B-API",
-    name: "GLM-4.5",
-    upstreamId: "0727-360B-API",
-    capabilities: {
-      vision: false,
-      mcp: true,
-      thinking: true,
-    },
-    defaultParams: {
-      top_p: 0.95,
-      temperature: 0.6,
-      max_tokens: 80000,
-    },
-  },
-  {
-    id: "GLM-4.5-Thinking",
-    name: "GLM-4.5-Thinking",
-    upstreamId: "0727-360B-API",
-    capabilities: {
-      vision: false,
-      mcp: true,
-      thinking: true,
-    },
-    defaultParams: {
-      top_p: 0.95,
-      temperature: 0.6,
-      max_tokens: 80000,
-    },
-  },
-  {
-    id: "GLM-4.5-Search",
-    name: "GLM-4.5-Search",
-    upstreamId: "0727-360B-API",
-    capabilities: {
-      vision: false,
-      mcp: true,
-      thinking: true,
-      search: true,
-    },
-    defaultParams: {
-      top_p: 0.95,
-      temperature: 0.6,
-      max_tokens: 80000,
-    },
-  },
-  {
-    id: "GLM-4.5-Air",
-    name: "GLM-4.5-Air",
-    upstreamId: "0727-106B-API",
-    capabilities: {
-      vision: false,
-      mcp: true,
-      thinking: false,
-    },
-    defaultParams: {
-      top_p: 0.95,
-      temperature: 0.6,
-      max_tokens: 80000,
-    },
-  },
-  {
-    id: "GLM-4-6-API-V1",
-    name: "GLM-4.6",
-    upstreamId: "GLM-4-6-API-V1",
-    capabilities: {
-      vision: true,
-      mcp: true,
-      thinking: true,
-    },
-    defaultParams: {
-      top_p: 0.95,
-      temperature: 0.6,
-      max_tokens: 195000,
-    },
-  },
-  {
-    id: "glm-4.5v",
-    name: "GLM-4.5V",
-    upstreamId: "glm-4.5v",
-    capabilities: {
-      vision: true,
-      mcp: false,
-      thinking: true,
-    },
-    defaultParams: {
-      top_p: 0.6,
-      temperature: 0.8,
-    },
-  },
-  {
-    id: "glm-5",
-    name: "GLM-5",
-    upstreamId: "glm-5",
-    capabilities: {
-      vision: true,
-      mcp: true,
-      thinking: true,
-    },
-    defaultParams: {
-      top_p: 0.95,
-      temperature: 0.6,
-      max_tokens: 200000,
-    },
-  },
-  {
-    id: "glm-4.7",
-    name: "GLM-4.7",
-    upstreamId: "glm-4.7",
-    capabilities: {
-      vision: true,
-      mcp: true,
-      thinking: true,
-    },
-    defaultParams: {
-      top_p: 0.95,
-      temperature: 0.6,
-      max_tokens: 200000,
-    },
-  },
-  {
-    id: "GLM-4.7-Thinking",
-    name: "GLM-4.7-Thinking",
-    upstreamId: "glm-4.7",
-    capabilities: {
-      vision: true,
-      mcp: true,
-      thinking: true,
-    },
-    defaultParams: {
-      top_p: 0.95,
-      temperature: 0.6,
-      max_tokens: 200000,
-    },
-  },
-  {
-    id: "GLM-4.7-Search",
-    name: "GLM-4.7-Search",
-    upstreamId: "glm-4.7",
+    id: "GLM-5.3-Flash",
+    name: "GLM-5.3-Flash",
+    upstreamId: "x-preview-l",
+    contextWindow: 1000000, // 1M tokens
     capabilities: {
       vision: true,
       mcp: true,
       thinking: true,
       search: true,
+      advancedSearch: false,
+      reasoningEffort: true,
     },
     defaultParams: {
       top_p: 0.95,
-      temperature: 0.6,
-      max_tokens: 200000,
+      temperature: 1.0,
+      max_tokens: 128000,
     },
   },
   {
-    id: "GLM-4.7-advanced-search",
-    name: "GLM-4.7-advanced-search",
-    upstreamId: "glm-4.7",
+    id: "GLM-5.3",
+    name: "GLM-5.3",
+    upstreamId: "glm-5.3",
+    contextWindow: 1000000, // 1M tokens
     capabilities: {
-      vision: true,
+      vision: false,
       mcp: true,
       thinking: true,
       search: true,
-      advancedSearch: true,
+      advancedSearch: false,
+      reasoningEffort: true,
     },
     defaultParams: {
       top_p: 0.95,
-      temperature: 0.6,
-      max_tokens: 200000,
+      temperature: 1.0,
+      max_tokens: 128000,
+    },
+  },
+  {
+    id: "GLM-5.2",
+    name: "GLM-5.2",
+    upstreamId: "glm-5.2",
+    contextWindow: 1000000, // 1M tokens
+    capabilities: {
+      vision: false,
+      mcp: true,
+      thinking: true,
+      search: true,
+      advancedSearch: false,
+      reasoningEffort: true,
+    },
+    defaultParams: {
+      top_p: 0.95,
+      temperature: 1.0,
+      max_tokens: 64064,
     },
   },
 ];
 
-// Default model
+// Default model is the latest flagship: GLM-5.3-Flash
 export const DEFAULT_MODEL = SUPPORTED_MODELS[0];
+
+const MODEL_ALIASES: Record<string, string> = {
+  "x-preview-l": "GLM-5.3-Flash",
+  "glm-5.3-flash": "GLM-5.3-Flash",
+  "glm-5-3-flash": "GLM-5.3-Flash",
+  "glm-5.3": "GLM-5.3",
+  "glm-5-3": "GLM-5.3",
+  "glm-5.2": "GLM-5.2",
+  "glm-5-2": "GLM-5.2",
+  "glm-5": "GLM-5.3",
+  "glm": "GLM-5.3-Flash",
+};
 
 /**
  * Get model configuration by ID
  */
 export function getModelConfig(modelId: string): ModelConfig {
-  const normalizedModelId = normalizeModelId(modelId);
-  const found = SUPPORTED_MODELS.find((m) => m.id === normalizedModelId);
+  const normalized = normalizeModelId(modelId);
+
+  // 1. Direct match on ID
+  let found = SUPPORTED_MODELS.find((m) => m.id.toLowerCase() === normalized);
+
+  // 2. Direct match on Upstream ID
+  if (!found) {
+    found = SUPPORTED_MODELS.find((m) => m.upstreamId.toLowerCase() === normalized);
+  }
+
+  // 3. Match via known aliases
+  if (!found) {
+    const aliasTarget = MODEL_ALIASES[normalized];
+    if (aliasTarget) {
+      found = SUPPORTED_MODELS.find((m) => m.id.toLowerCase() === aliasTarget.toLowerCase());
+    }
+  }
 
   if (!found) {
     logger.warn(
       "Model config not found: %s (normalized: %s). Using default: %s",
       modelId,
-      normalizedModelId,
+      normalized,
       DEFAULT_MODEL.name,
     );
   }
@@ -224,107 +135,9 @@ export function getModelConfig(modelId: string): ModelConfig {
 }
 
 /**
- * Map model ID (handle special cases)
+ * Map model ID (handle special cases to upstream model IDs)
  */
 export function mapModelId(modelId: string): string {
-  const normalized = normalizeModelId(modelId);
-
-  const modelMappings: Record<string, string> = {
-    "glm-4-6": "GLM-4-6-API-V1",
-  };
-
-  const mapped = modelMappings[normalized];
-  if (mapped) {
-    logger.debug("Model ID mapping: %s → %s", modelId, mapped);
-    return mapped;
-  }
-
-  return normalized;
-}
-
-/**
- * Advanced Model Capability Detector
- */
-export class ModelCapabilityDetector {
-  /**
-   * Detect model's advanced capabilities
-   */
-  static detectCapabilities(modelId: string, reasoning?: boolean): ModelCapabilities {
-    const normalizedModelId = modelId.toLowerCase();
-
-    return {
-      thinking: this.isThinkingModel(normalizedModelId, reasoning),
-      search: this.isSearchModel(normalizedModelId),
-      advancedSearch: this.isAdvancedSearchModel(normalizedModelId),
-      vision: this.isVisionModel(normalizedModelId),
-      mcp: this.supportsMCP(normalizedModelId),
-    };
-  }
-
-  private static isThinkingModel(modelId: string, reasoning?: boolean): boolean {
-    return modelId.includes("thinking") ||
-      modelId.includes("4.6") ||
-      reasoning === true ||
-      modelId.includes("0727-360b-api");
-  }
-
-  private static isSearchModel(modelId: string): boolean {
-    return modelId.includes("search") ||
-      modelId.includes("web") ||
-      modelId.includes("browser");
-  }
-
-  private static isAdvancedSearchModel(modelId: string): boolean {
-    return modelId.includes("advanced-search") ||
-      modelId.includes("advanced") ||
-      modelId.includes("pro-search");
-  }
-
-  private static isVisionModel(modelId: string): boolean {
-    return modelId.includes("4.5v") ||
-      modelId.includes("vision") ||
-      modelId.includes("image") ||
-      modelId.includes("multimodal");
-  }
-
-  private static supportsMCP(modelId: string): boolean {
-    // Most advanced models support MCP
-    return this.isThinkingModel(modelId) ||
-      this.isSearchModel(modelId) ||
-      this.isAdvancedSearchModel(modelId);
-  }
-
-  /**
-   * Get MCP servers for a model based on capabilities
-   */
-  static getMCPServersForModel(capabilities: ModelCapabilities): string[] {
-    const servers: string[] = [];
-
-    if (capabilities.advancedSearch) {
-      servers.push("advanced-search");
-      logger.debug("Detected advanced search model, adding advanced-search MCP server");
-    } else if (capabilities.search) {
-      servers.push("deep-web-search");
-    }
-
-    if (capabilities.mcp) {
-      logger.debug("Model supports hidden MCP features: vibe-coding, ppt-maker, image-search, deep-research");
-    }
-
-    return servers;
-  }
-
-  /**
-   * Get hidden MCP features list
-   */
-  static getHiddenMCPFeatures(): Array<{ type: string; server: string; status: string }> {
-    return [
-      { type: "mcp", server: "vibe-coding", status: "hidden" },
-      { type: "mcp", server: "ppt-maker", status: "hidden" },
-      { type: "mcp", server: "image-search", status: "hidden" },
-      { type: "mcp", server: "deep-research", status: "hidden" },
-      { type: "tool_selector", server: "tool_selector", status: "hidden" },
-      { type: "mcp", server: "advanced-search", status: "hidden" },
-    ];
-  }
+  const config = getModelConfig(modelId);
+  return config.upstreamId;
 }

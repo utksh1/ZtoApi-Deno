@@ -3,186 +3,611 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZtoApi - OpenAI-compatible API proxy</title>
+    <title>ZaiProxy - High-Performance OpenAI & Claude API Gateway for GLM Models</title>
+    <meta name="description"
+      content="Dual-protocol API proxy for Z.ai GLM-5.3-Flash, GLM-5.3, and GLM-5.2 with 1M context window, thinking modes, and OpenAI + Anthropic Claude compatibility.">
     <link rel="stylesheet" href="/ui/index.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet">
   </head>
-  <body>
-    <!-- Animated Background -->
-    <div class="bg-animation">
-      <div class="floating-shapes"></div>
-    </div>
+  <body class="dark-mode">
+    <!-- Background Grid & Glow -->
+    <div class="bg-grid-pattern" aria-hidden="true"></div>
+    <div class="bg-glow-radial" aria-hidden="true"></div>
 
-    <!-- Dark Mode Toggle -->
-    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
-      <span class="sun-icon">☀️</span>
-      <span class="moon-icon">🌙</span>
-    </button>
-
-    <!-- Navigation dots -->
-    <nav class="nav-dots">
-      <a href="#hero" class="nav-dot active" data-section="hero"></a>
-      <a href="#links" class="nav-dot" data-section="links"></a>
-      <a href="#features" class="nav-dot" data-section="features"></a>
-    </nav>
-
-    <div class="container">
-      <section id="hero" class="hero-section">
-        <header class="hero-header">
-          <div class="logo-container">
-            <h1 class="logo">ZtoApi</h1>
-            <div class="logo-glow"></div>
+    <!-- Navigation Header -->
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="/" class="brand-logo" aria-label="ZaiProxy Home">
+          <div class="brand-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 18 22 12 16 6"></polyline>
+              <polyline points="8 6 2 12 8 18"></polyline>
+            </svg>
           </div>
-          <div class="subtitle">OpenAI-compatible proxy for Z.ai GLM-4.5</div>
-          <p class="hero-description">
-            A high-performance, easy-to-deploy API proxy that allows you to use OpenAI-compatible format to access
-            Z.ai's GLM-4.5, GLM-4.6, and GLM-4.5V models.
-          </p>
-          <div class="hero-stats">
-            <div class="stat-item">
-              <span class="stat-number" data-target="99.9">0</span>
-              <span class="stat-label">% Uptime</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-number">0.02ms</span>
-              <span class="stat-label">Average Response Time</span>
-              <small style="display: block; color: var(--text-secondary); font-size: 0.75rem; margin-top: 5px"
-              >(excluding the z.ai request time)</small>
-            </div>
-            <div class="stat-item">
-              <span class="stat-number" data-target="1000">0</span>
-              <span class="stat-label">+ Requests</span>
-            </div>
-          </div>
-        </header>
-      </section>
+          <span class="brand-name">ZaiProxy</span>
+          <span class="brand-badge">v2.0</span>
+        </a>
 
-      <section id="links" class="links-section">
-        <div class="section-header">
-          <h2 class="section-title">Quick Access</h2>
-          <div class="title-underline"></div>
+        <div class="server-status-pill" id="serverStatusPill">
+          <span class="status-dot"></span>
+          <span class="status-text" id="statusText">Gateway • Online</span>
         </div>
 
-        <div class="links">
-          <div class="link-card" data-tilt>
-            <div class="card-icon">📖</div>
-            <h3>API Docs</h3>
-            <p>View full API documentation and usage examples.</p>
-            <a href="/docs" class="card-link">
-              <span>View Docs</span>
-              <span class="link-arrow">→</span>
-            </a>
-            <div class="card-glow"></div>
-            <div class="card-shine"></div>
-          </div>
+        <nav class="nav-links" aria-label="Main Navigation">
+          <a href="#playground" class="nav-link">Playground</a>
+          <a href="#models" class="nav-link">Models</a>
+          <a href="#quickstart" class="nav-link">Quickstart</a>
+          <a href="/dashboard" class="nav-link highlight">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 3v18h18"></path>
+              <path d="M18 17V9"></path>
+              <path d="M13 17V5"></path>
+              <path d="M8 17v-3"></path>
+            </svg>
+            Dashboard
+          </a>
+          <a href="/docs" class="nav-link">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            </svg>
+            Docs
+          </a>
+        </nav>
 
-          <div class="link-card" data-tilt>
-            <div class="card-icon">📊</div>
-            <h3>Dashboard</h3>
-            <p>Real-time monitoring of API calls, statistics, and performance.</p>
-            <a href="/dashboard" class="card-link">
-              <span>View Dashboard</span>
-              <span class="link-arrow">→</span>
-            </a>
-            <div class="card-glow"></div>
-            <div class="card-shine"></div>
-          </div>
-
-          <div class="link-card" data-tilt>
-            <div class="card-icon">🤖</div>
-            <h3>Models</h3>
-            <p>See the available AI models and their details.</p>
-            <a href="/v1/models" class="card-link">
-              <span>View Models</span>
-              <span class="link-arrow">→</span>
-            </a>
-            <div class="card-glow"></div>
-            <div class="card-shine"></div>
-          </div>
+        <div class="header-actions">
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle visual theme" title="Toggle theme">
+            <svg class="sun-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <svg class="moon-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
         </div>
-      </section>
+      </div>
+    </header>
 
-      <section id="features" class="features-section">
-        <div class="section-header">
-          <h2 class="section-title">Features</h2>
-          <div class="title-underline"></div>
+    <main class="main-content">
+      <!-- Hero Section -->
+      <section class="hero-section" id="hero">
+        <div class="hero-badge">
+          <span class="badge-dot"></span>
+          <span>Flagship GLM-5.3-Flash & GLM-5.3 Reasoning • 1,000,000 Token Context</span>
+        </div>
+        <h1 class="hero-title">
+          OpenAI & Claude Compatible Gateway for <span class="gradient-text">Z.ai Frontier Models</span>
+        </h1>
+        <p class="hero-description">
+          A high-throughput, self-hosted proxy engineered in Deno. Access Z.ai's cutting-edge GLM models using your existing OpenAI SDKs (<code>/v1/chat/completions</code>) or Anthropic Claude SDKs (<code>/anthropic/v1/messages</code>) with streaming, thinking reasoning extraction, and browser bridge resilience.
+        </p>
+
+        <div class="hero-cta-group">
+          <a href="#playground" class="btn btn-primary" id="heroPlaygroundBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            Launch Playground
+          </a>
+          <a href="/dashboard" class="btn btn-secondary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+            Open Live Telemetry
+          </a>
+          <button class="btn btn-ghost" id="copyCurlBtn" title="Copy quick cURL command">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <span>Copy cURL</span>
+          </button>
         </div>
 
-        <div class="feature-list">
-          <div class="feature-item" data-aos="fade-up">
-            <div class="feature-icon-wrapper">
-              <div class="feature-icon">🔄</div>
-              <div class="icon-glow"></div>
-            </div>
-            <h3>OpenAI API Compatibility</h3>
-            <p>Fully compatible with OpenAI API format — use your preferred SDK!</p>
+        <!-- Metric highlights -->
+        <div class="hero-metrics">
+          <div class="metric-card">
+            <div class="metric-value">1,000,000</div>
+            <div class="metric-label">Tokens Context Window</div>
+            <div class="metric-sub">GLM-5.3-Flash, GLM-5.3, GLM-5.2</div>
           </div>
-
-          <div class="feature-item" data-aos="fade-up" data-aos-delay="100">
-            <div class="feature-icon-wrapper">
-              <div class="feature-icon">🌊</div>
-              <div class="icon-glow"></div>
-            </div>
-            <h3>Streaming Support</h3>
-            <p>Supports real-time streaming output for a better user experience</p>
+          <div class="metric-card">
+            <div class="metric-value">&lt; 1ms</div>
+            <div class="metric-label">Proxy Latency Overhead</div>
+            <div class="metric-sub">Native Deno async stream pipeline</div>
           </div>
-
-          <div class="feature-item" data-aos="fade-up" data-aos-delay="200">
-            <div class="feature-icon-wrapper">
-              <div class="feature-icon">🔐</div>
-              <div class="icon-glow"></div>
-            </div>
-            <h3>Authentication</h3>
-            <p>API key validation to secure the service</p>
+          <div class="metric-card">
+            <div class="metric-value">Dual Protocol</div>
+            <div class="metric-label">OpenAI + Claude Ready</div>
+            <div class="metric-sub">Works with any standard AI client SDK</div>
           </div>
-
-          <div class="feature-item" data-aos="fade-up" data-aos-delay="300">
-            <div class="feature-icon-wrapper">
-              <div class="feature-icon">🛠️</div>
-              <div class="icon-glow"></div>
-            </div>
-            <h3>Flexible Configuration</h3>
-            <p>Configured via environment variables</p>
-          </div>
-
-          <div class="feature-item" data-aos="fade-up" data-aos-delay="400">
-            <div class="feature-icon-wrapper">
-              <div class="feature-icon">📝</div>
-              <div class="icon-glow"></div>
-            </div>
-            <h3>Thinking Display</h3>
-            <p>Intelligently processes and displays the model's thinking</p>
-          </div>
-
-          <div class="feature-item" data-aos="fade-up" data-aos-delay="500">
-            <div class="feature-icon-wrapper">
-              <div class="feature-icon">📊</div>
-              <div class="icon-glow"></div>
-            </div>
-            <h3>Real-time Monitoring</h3>
-            <p>Provides a web dashboard to show live forwarding and stats</p>
+          <div class="metric-card">
+            <div class="metric-value">5 Modes</div>
+            <div class="metric-label">Thinking Tag Transformations</div>
+            <div class="metric-sub">strip • think • thinking • separate • raw</div>
           </div>
         </div>
       </section>
 
-      <footer class="footer">
-        <div class="footer-content">
-          <p>© 2024 ZtoApi. Powered by Deno & Z.ai GLM-4.5, GLM-4.6, GLM-4.5V</p>
-          <div class="footer-links">
-            <a href="#" class="footer-link">GitHub</a>
-            <a href="#" class="footer-link">Support</a>
-            <a href="#" class="footer-link">Community</a>
+      <!-- Live Interactive Playground Section -->
+      <section class="playground-section" id="playground">
+        <div class="section-title-wrap">
+          <h2 class="section-title">Interactive API Playground</h2>
+          <p class="section-subtitle">Test real-time chat completions directly against your running local server.</p>
+        </div>
+
+        <div class="playground-card">
+          <div class="playground-grid">
+            <!-- Config Sidebar -->
+            <div class="playground-config">
+              <div class="config-header">
+                <h3>Request Configuration</h3>
+              </div>
+
+              <!-- Protocol Switcher -->
+              <div class="form-group">
+                <label class="form-label" for="protocolTabs">Protocol Endpoint</label>
+                <div class="segmented-control" id="protocolTabs" role="tablist">
+                  <button type="button" class="segment active" data-protocol="openai" role="tab"
+                    aria-selected="true">OpenAI (/v1)</button>
+                  <button type="button" class="segment" data-protocol="anthropic" role="tab"
+                    aria-selected="false">Claude (/anthropic/v1)</button>
+                </div>
+              </div>
+
+              <!-- Model Selector -->
+              <div class="form-group">
+                <label class="form-label" for="modelSelect">Target Model</label>
+                <select id="modelSelect" class="form-select">
+                  <optgroup label="Flagship Frontier (1M Context)">
+                    <option value="GLM-5.3-Flash" selected>GLM-5.3-Flash (Fast Reasoning, 1M)</option>
+                    <option value="GLM-5.3">GLM-5.3 (Frontier Agentic, 1M)</option>
+                    <option value="GLM-5.2">GLM-5.2 (High-Performance, 1M)</option>
+                  </optgroup>
+                </select>
+              </div>
+
+              <!-- Thinking Mode & Features -->
+              <div class="form-group">
+                <label class="form-label" for="thinkingSelect">Thinking Extraction Mode</label>
+                <select id="thinkingSelect" class="form-select">
+                  <option value="thinking" selected>thinking (Convert &lt;details&gt; to &lt;thinking&gt;)</option>
+                  <option value="strip">strip (Remove reasoning tags)</option>
+                  <option value="think">think (Convert to standard &lt;think&gt; tags)</option>
+                  <option value="separate">separate (Extract to reasoning_content field)</option>
+                  <option value="raw">raw (Preserve upstream HTML tags)</option>
+                </select>
+              </div>
+
+              <!-- Toggles: Stream -->
+              <div class="toggle-row">
+                <label class="toggle-control" for="streamToggle">
+                  <input type="checkbox" id="streamToggle" checked>
+                  <span class="toggle-slider"></span>
+                  <span class="toggle-label">Stream Response (SSE)</span>
+                </label>
+              </div>
+
+              <!-- API Key Input -->
+              <div class="form-group">
+                <label class="form-label" for="apiKeyInput">Authorization Key</label>
+                <input type="password" id="apiKeyInput" class="form-input font-mono" value="sk-your-key"
+                  placeholder="Bearer key...">
+                <span class="form-hint">Uses local proxy key (configured via <code>DEFAULT_KEY</code>).</span>
+              </div>
+
+              <!-- Preset Prompts -->
+              <div class="form-group">
+                <label class="form-label">Sample Prompts</label>
+                <div class="prompt-chips">
+                  <button type="button" class="chip"
+                    data-prompt="Explain the difference between optimistic concurrency control and pessimistic locking with code examples.">Concurrency</button>
+                  <button type="button" class="chip"
+                    data-prompt="Write a fast, zero-dependency LRU Cache implementation in TypeScript with O(1) get and set.">LRU Cache</button>
+                  <button type="button" class="chip"
+                    data-prompt="What are the key architectural advantages of GLM-5.3-Flash over standard reasoning models?">GLM-5.3 Deep Dive</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Execution & Output Console -->
+            <div class="playground-console">
+              <!-- Prompt Input Area -->
+              <div class="console-input-pane">
+                <div class="input-header">
+                  <label for="promptInput" class="console-label">User Prompt</label>
+                  <button type="button" class="btn-clear" id="clearPromptBtn">Clear</button>
+                </div>
+                <textarea id="promptInput" class="console-textarea" rows="5"
+                  placeholder="Enter your prompt here...">Explain how GLM-5.3-Flash achieves high reasoning throughput with deep thinking capabilities.</textarea>
+                <div class="console-action-bar">
+                  <button type="button" class="btn btn-primary" id="sendPromptBtn">
+                    <svg class="send-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="2">
+                      <line x1="22" y1="2" x2="11" y2="13"></line>
+                      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                    <span id="sendBtnText">Execute Request</span>
+                  </button>
+                  <button type="button" class="btn btn-danger" id="stopPromptBtn" style="display: none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="6" y="6" width="12" height="12"></rect>
+                    </svg>
+                    <span>Stop</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Output Pane -->
+              <div class="console-output-pane">
+                <div class="output-header">
+                  <div class="output-status-group">
+                    <span class="console-label">Response Stream</span>
+                    <span class="status-badge" id="responseStatusBadge">Ready</span>
+                    <span class="metric-pill" id="responseLatencyPill" style="display: none;">0ms</span>
+                  </div>
+                  <div class="output-actions">
+                    <button type="button" class="btn-icon" id="copyResponseBtn" title="Copy response text" disabled>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Thinking Block (collapsible) -->
+                <div class="thinking-box" id="thinkingBox" style="display: none;">
+                  <details open>
+                    <summary class="thinking-summary">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <path
+                          d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"></path>
+                        <path d="M9 21h6"></path>
+                      </svg>
+                      <span>Reasoning Process (Thinking)</span>
+                    </summary>
+                    <pre class="thinking-content" id="thinkingContent"></pre>
+                  </details>
+                </div>
+
+                <!-- Main Response View -->
+                <div class="output-content-wrap">
+                  <div class="skeleton-stream-wrap" id="skeletonStream" style="display: none;" aria-busy="true"
+                    aria-label="Deliberating response">
+                    <div class="skeleton-meta-row">
+                      <div class="skeleton-spinner"></div>
+                      <span class="skeleton-status-label"
+                        id="skeletonStatusLabel">Routing prompt to GLM reasoning engine...</span>
+                    </div>
+                    <div class="skeleton skeleton-line" style="width: 86%;"></div>
+                    <div class="skeleton skeleton-line" style="width: 95%;"></div>
+                    <div class="skeleton skeleton-line" style="width: 74%;"></div>
+                    <div class="skeleton skeleton-line" style="width: 84%;"></div>
+                  </div>
+                  <pre class="output-content font-mono"
+                    id="outputContent">Awaiting execution... Click "Execute Request" or pick a sample prompt to start.</pre>
+                </div>
+
+                <!-- Footer Stats -->
+                <div class="output-footer" id="outputFooter" style="display: none;">
+                  <span id="outputTokenStats">Tokens: Prompt 0 • Completion 0 • Total 0</span>
+                  <span id="outputSpeedStats">Speed: 0 tok/s</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </footer>
-    </div>
+      </section>
 
-    <!-- Scroll to top button -->
-    <button class="scroll-to-top" id="scrollToTop" aria-label="Scroll to top">
-      <span>↑</span>
-    </button>
+      <!-- Multi-Language Quickstart Code Section -->
+      <section class="quickstart-section" id="quickstart">
+        <div class="section-title-wrap">
+          <h2 class="section-title">Drop-in Integration Code</h2>
+          <p class="section-subtitle">Use your current SDKs by changing only the <code>base_url</code>.</p>
+        </div>
+
+        <div class="code-card">
+          <div class="code-header">
+            <div class="code-tabs" id="codeTabs" role="tablist">
+              <button type="button" class="code-tab active" data-tab="curl">cURL</button>
+              <button type="button" class="code-tab" data-tab="python-openai">Python (OpenAI)</button>
+              <button type="button" class="code-tab" data-tab="node-openai">Node.js (OpenAI)</button>
+              <button type="button" class="code-tab" data-tab="python-anthropic">Python (Claude)</button>
+              <button type="button" class="code-tab" data-tab="node-anthropic">Node.js (Claude)</button>
+            </div>
+            <button type="button" class="btn-copy-code" id="copySnippetBtn" title="Copy code snippet">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span>Copy</span>
+            </button>
+          </div>
+
+          <div class="code-body">
+            <!-- cURL snippet -->
+            <pre class="code-block active" id="snippet-curl"><code>curl http://localhost:9090/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk-your-key" \
+  -d '{
+    "model": "GLM-5.3-Flash",
+    "stream": true,
+    "messages": [
+      {"role": "user", "content": "Explain quantum computing in three sentences."}
+    ]
+  }'</code></pre>
+
+            <!-- Python OpenAI snippet -->
+            <pre class="code-block" id="snippet-python-openai"><code>from openai import OpenAI
+
+client = OpenAI(
+    base_url="http://localhost:9090/v1",
+    api_key="sk-your-key"
+)
+
+response = client.chat.completions.create(
+    model="GLM-5.3-Flash",
+    messages=[{"role": "user", "content": "Explain quantum computing in three sentences."}],
+    stream=True
+)
+
+for chunk in response:
+    content = chunk.choices[0].delta.content or ""
+    print(content, end="", flush=True)</code></pre>
+
+            <!-- Node.js OpenAI snippet -->
+            <pre class="code-block" id="snippet-node-openai"><code>import OpenAI from "openai";
+
+const client = new OpenAI({
+  baseURL: "http://localhost:9090/v1",
+  apiKey: "sk-your-key",
+});
+
+const stream = await client.chat.completions.create({
+  model: "GLM-5.3-Flash",
+  messages: [{ role: "user", content: "Explain quantum computing in three sentences." }],
+  stream: true,
+});
+
+for await (const chunk of stream) {
+  process.stdout.write(chunk.choices[0]?.delta?.content || "");
+}</code></pre>
+
+            <!-- Python Anthropic snippet -->
+            <pre class="code-block" id="snippet-python-anthropic"><code>import anthropic
+
+client = anthropic.Anthropic(
+    base_url="http://localhost:9090/anthropic",
+    api_key="sk-your-key"
+)
+
+with client.messages.stream(
+    model="GLM-5.3-Flash",
+    max_tokens=1024,
+    messages=[{"role": "user", "content": "Explain quantum computing in three sentences."}]
+) as stream:
+    for text in stream.text_stream:
+        print(text, end="", flush=True)</code></pre>
+
+            <!-- Node.js Anthropic snippet -->
+            <pre class="code-block" id="snippet-node-anthropic"><code>import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({
+  baseURL: "http://localhost:9090/anthropic",
+  apiKey: "sk-your-key",
+});
+
+const stream = await client.messages.create({
+  model: "GLM-5.3-Flash",
+  max_tokens=1024,
+  messages: [{ role: "user", content: "Explain quantum computing in three sentences." }],
+  stream: true,
+});
+
+for await (const event of stream) {
+  if (event.type === "content_block_delta" && event.delta?.type === "text_delta") {
+    process.stdout.write(event.delta.text);
+  }
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- Supported Models Bento Grid -->
+      <section class="models-section" id="models">
+        <div class="section-title-wrap">
+          <h2 class="section-title">Supported Frontier Models</h2>
+          <p
+            class="section-subtitle">Real-time mapping of state-of-the-art reasoning, code, and multimodal vision engines.</p>
+        </div>
+
+        <div class="models-grid">
+          <!-- GLM-5.3-Flash Card -->
+          <div class="model-card featured">
+            <div class="model-badge">Flagship Fast</div>
+            <h3 class="model-name">GLM-5.3-Flash</h3>
+            <p
+              class="model-desc">Ultra-fast reasoning model featuring full thinking process extraction and extreme throughput.</p>
+            <div class="model-specs">
+              <div class="spec-row">
+                <span class="spec-label">Context Window</span>
+                <span class="spec-value">1,000,000 tokens</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-label">Max Output</span>
+                <span class="spec-value">128,000 tokens</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-label">Thinking Mode</span>
+                <span class="spec-value text-accent">Supported</span>
+              </div>
+            </div>
+            <div class="model-footer">
+              <code class="model-tag">id: GLM-5.3-Flash</code>
+            </div>
+          </div>
+
+          <!-- GLM-5.3 Card -->
+          <div class="model-card featured">
+            <div class="model-badge">Frontier Agentic</div>
+            <h3 class="model-name">GLM-5.3</h3>
+            <p
+              class="model-desc">Deep reasoning, complex coding, and autonomous multi-step tool execution capabilities.</p>
+            <div class="model-specs">
+              <div class="spec-row">
+                <span class="spec-label">Context Window</span>
+                <span class="spec-value">1,000,000 tokens</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-label">Max Output</span>
+                <span class="spec-value">128,000 tokens</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-label">Reasoning Effort</span>
+                <span class="spec-value text-accent">Adaptive</span>
+              </div>
+            </div>
+            <div class="model-footer">
+              <code class="model-tag">id: GLM-5.3</code>
+            </div>
+          </div>
+
+          <!-- GLM-5.2 Card -->
+          <div class="model-card">
+            <h3 class="model-name">GLM-5.2</h3>
+            <p class="model-desc">High-performance reasoning and code generation with huge memory capacity.</p>
+            <div class="model-specs">
+              <div class="spec-row">
+                <span class="spec-label">Context Window</span>
+                <span class="spec-value">1,000,000 tokens</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-label">Max Output</span>
+                <span class="spec-value">64,064 tokens</span>
+              </div>
+            </div>
+            <div class="model-footer">
+              <code class="model-tag">id: GLM-5.2</code>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Architecture & Features Bento Section -->
+      <section class="features-section" id="features">
+        <div class="section-title-wrap">
+          <h2 class="section-title">Engineered for Production Reliability</h2>
+          <p
+            class="section-subtitle">Low-latency, lightweight, and resilient architecture written in native TypeScript.</p>
+        </div>
+
+        <div class="bento-grid">
+          <div class="bento-card">
+            <div class="bento-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="16 18 22 12 16 6"></polyline>
+                <polyline points="8 6 2 12 8 18"></polyline>
+              </svg>
+            </div>
+            <h3>Dual Protocol Translation</h3>
+            <p>Unified translation layer handles bidirectional format transformation between OpenAI Chat Completions and Anthropic Messages specification.</p>
+          </div>
+
+          <div class="bento-card">
+            <div class="bento-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+              </svg>
+            </div>
+            <h3>Real-time SSE Streaming</h3>
+            <p>Zero-buffering pipeline transforms upstream SSE packets instantly, maintaining sub-millisecond response latency with smooth token delivery.</p>
+          </div>
+
+          <div class="bento-card">
+            <div class="bento-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 6v6l4 2"></path>
+              </svg>
+            </div>
+            <h3>Autonomous Thinking Engine</h3>
+            <p>Flexible header-driven reasoning extraction lets you format model deliberation into <code>&lt;think&gt;</code> tags or stream it into <code>reasoning_content</code>.</p>
+          </div>
+
+          <div class="bento-card">
+            <div class="bento-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </div>
+            <h3>CDP Browser Bridge</h3>
+            <p>Resilient fallback routing through an active browser session bypasses upstream cloudflare security barriers without manual intervention.</p>
+          </div>
+
+          <div class="bento-card">
+            <div class="bento-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+              </svg>
+            </div>
+            <h3>Live Telemetry Dashboard</h3>
+            <p>Built-in observability console with real-time latency tracking, request inspect tables, and status code distribution at <code>/dashboard</code>.</p>
+          </div>
+
+          <div class="bento-card">
+            <div class="bento-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </div>
+            <h3>Token Pool & Session Auth</h3>
+            <p>Automatic token recycling with guest session rotation ensures high availability even during unauthenticated development testing.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <span class="font-mono">ZaiProxy</span>
+          <span class="footer-copy">Powered by Deno Native HTTP Runtime & Z.ai GLM-5.3</span>
+        </div>
+        <div class="footer-links">
+          <a href="/dashboard">Dashboard</a>
+          <a href="/docs">Documentation</a>
+          <a href="/v1/models">OpenAI Models JSON</a>
+          <a href="/anthropic/v1/models">Claude Models JSON</a>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toastNotification" role="alert" aria-live="polite"></div>
 
     <script src="/ui/index.js"></script>
   </body>

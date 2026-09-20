@@ -46,12 +46,36 @@ export function setSecurityHeaders(headers: Headers): void {
 }
 
 /**
- * Create a standardized error response
+ * Create OpenAI-compatible JSON error response:
+ * { "error": { "message": "...", "type": "...", "code": "..." } }
  */
-export function createErrorResponse(
+export function createOpenAIErrorResponse(
   status: number,
-  type: string,
   message: string,
+  type = "invalid_request_error",
+  code: string | null = null,
+  additionalHeaders?: Headers,
+): Response {
+  const headers = new Headers(additionalHeaders);
+  headers.set("Content-Type", "application/json");
+  setCORSHeaders(headers);
+
+  return new Response(
+    JSON.stringify({
+      error: { message, type, param: null, code },
+    }),
+    { status, headers },
+  );
+}
+
+/**
+ * Create Anthropic-compatible JSON error response:
+ * { "type": "error", "error": { "type": "...", "message": "..." } }
+ */
+export function createAnthropicErrorResponse(
+  status: number,
+  message: string,
+  type = "invalid_request_error",
   additionalHeaders?: Headers,
 ): Response {
   const headers = new Headers(additionalHeaders);
@@ -65,6 +89,18 @@ export function createErrorResponse(
     }),
     { status, headers },
   );
+}
+
+/**
+ * Create a standardized error response (alias for Anthropic/general)
+ */
+export function createErrorResponse(
+  status: number,
+  type: string,
+  message: string,
+  additionalHeaders?: Headers,
+): Response {
+  return createAnthropicErrorResponse(status, message, type, additionalHeaders);
 }
 
 /**

@@ -2,11 +2,12 @@
  * Unit tests for ZtoApi modules
  */
 
-import { assertEquals, assertExists } from "assert";
+import { assertEquals, assertExists } from "@std/assert";
 import { CONFIG } from "../src/config/constants.ts";
 import { getModelConfig, SUPPORTED_MODELS } from "../src/config/models.ts";
 import { logger } from "../src/utils/logger.ts";
 import { setCORSHeaders, truncateString } from "../src/utils/helpers.ts";
+import { transformThinking } from "../src/utils/stream.ts";
 
 Deno.test("CONFIG constants are defined", () => {
   assertExists(CONFIG.DEFAULT_PORT);
@@ -24,7 +25,7 @@ Deno.test("SUPPORTED_MODELS is not empty", () => {
 });
 
 Deno.test("getModelConfig returns valid config", () => {
-  const config = getModelConfig("GLM-4.5");
+  const config = getModelConfig("GLM-5.3-Flash");
   assertExists(config);
   assertExists(config.id);
   assertExists(config.name);
@@ -63,10 +64,64 @@ Deno.test("setCORSHeaders sets correct headers", () => {
 });
 
 Deno.test("Model capabilities detection", () => {
-  const glm45 = getModelConfig("GLM-4.5");
-  assertEquals(glm45.capabilities.thinking, true);
-  assertEquals(glm45.capabilities.mcp, true);
+  const glmFlash = getModelConfig("GLM-5.3-Flash");
+  assertEquals(glmFlash.capabilities.thinking, true);
+  assertEquals(glmFlash.capabilities.mcp, true);
+  assertEquals(glmFlash.capabilities.vision, true);
 
-  const glm45v = getModelConfig("glm-4.5v");
-  assertEquals(glm45v.capabilities.vision, true);
+  const glm53 = getModelConfig("GLM-5.3");
+  assertEquals(glm53.capabilities.thinking, true);
+  assertEquals(glm53.capabilities.mcp, true);
+});
+
+Deno.test("transformThinking - strip mode", () => {
+  const content = "<think>thinking</think>content";
+  const result = transformThinking(content, "strip");
+  assertEquals(result, "content");
+});
+
+Deno.test("transformThinking - thinking mode", () => {
+  const content = "<think>thinking</think>content";
+  const result = transformThinking(content, "thinking");
+  assertEquals(result, "<thinking>thinking</thinking>content");
+});
+
+Deno.test("transformThinking - think mode", () => {
+  const content = "<think>thinking</think>content";
+  const result = transformThinking(content, "think");
+  assertEquals(result, content);
+});
+
+Deno.test("transformThinking - raw mode", () => {
+  const content = "<think>thinking</think>content";
+  const result = transformThinking(content, "raw");
+  assertEquals(result, content);
+});
+
+Deno.test("transformThinking - separate mode", () => {
+  const content = "<think>thinking</think>content";
+  const result = transformThinking(content, "separate");
+  assertEquals(result, { reasoning: "thinking", content: "content" });
+});
+
+Deno.test("transformThinking - empty content", () => {
+  const content = "";
+  const resultStrip = transformThinking(content, "strip");
+  assertEquals(resultStrip, "");
+  const resultSeparate = transformThinking(content, "separate");
+  assertEquals(resultSeparate, { reasoning: "", content: "" });
+});
+
+Deno.test("transformThinking - no tags", () => {
+  const content = "just content";
+  const resultStrip = transformThinking(content, "strip");
+  assertEquals(resultStrip, "just content");
+  const resultSeparate = transformThinking(content, "separate");
+  assertEquals(resultSeparate, { reasoning: "", content: "just content" });
+});
+
+Deno.test("transformThinking - partial think tag", () => {
+  const content = "thinking</think>content";
+  const result = transformThinking(content, "strip");
+  assertEquals(result, "thinking</think>content");
 });

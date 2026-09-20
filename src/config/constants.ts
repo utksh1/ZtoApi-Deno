@@ -23,7 +23,8 @@ export const CONFIG = {
   DEFAULT_TRUNCATE_LENGTH: 50,
 
   // Upstream Configuration
-  DEFAULT_FE_VERSION: "prod-fe-1.0.95" as string,
+  DEFAULT_FE_VERSION: "prod-fe-1.1.96" as string,
+  DEFAULT_CLIENT_VERSION: "1.0.95", // Z.ai client version
   DEFAULT_SIGNING_KEY: "key-@@@@)))()((9))-xxxx&&&%%%%%",
   ORIGIN_BASE: "https://chat.z.ai",
   API_ENDPOINT: "https://chat.z.ai/api/v2/chat/completions",
@@ -55,31 +56,3 @@ export const UPSTREAM_URL = Deno.env.get("UPSTREAM_URL") || "https://chat.z.ai/a
 export const DEFAULT_KEY = Deno.env.get("DEFAULT_KEY") || CONFIG.DEFAULT_API_KEY;
 export const ZAI_TOKEN = Deno.env.get("ZAI_TOKEN") || "";
 export const DEFAULT_LANGUAGE = Deno.env.get("DEFAULT_LANGUAGE") || CONFIG.DEFAULT_LANGUAGE;
-
-export const HTTP_PROXY = Deno.env.get("HTTP_PROXY") || "";
-export const HTTPS_PROXY = Deno.env.get("HTTPS_PROXY") || "";
-export const SOCKS5_PROXY = Deno.env.get("SOCKS5_PROXY") || "";
-
-export function getProxyConfig(): string | undefined {
-  if (HTTPS_PROXY) return HTTPS_PROXY;
-  if (HTTP_PROXY) return HTTP_PROXY;
-  if (SOCKS5_PROXY) return SOCKS5_PROXY;
-  return undefined;
-}
-
-/**
- * Validate environment configuration at startup
- */
-export function validateEnvironment(): string[] {
-  const warnings: string[] = [];
-
-  if (!Deno.env.get("ZAI_TOKEN") && !Deno.env.get("ZAI_TOKENS")) {
-    warnings.push("⚠️  No ZAI_TOKEN configured - will use anonymous tokens");
-  }
-
-  if (DEFAULT_KEY === CONFIG.DEFAULT_API_KEY) {
-    warnings.push("⚠️  DEFAULT_KEY is still set to default value - please update for production!");
-  }
-
-  return warnings;
-}

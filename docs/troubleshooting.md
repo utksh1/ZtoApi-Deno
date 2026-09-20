@@ -1,6 +1,6 @@
 # 🔧 Troubleshooting
 
-Common issues and solutions for ZtoApi.
+Common issues and solutions for ZaiProxy.
 
 ## 🛠️ Common Issues
 

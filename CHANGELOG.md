@@ -1,5 +1,41 @@
 # Changelog
 
+## [3.0.0] - 2026-09-21
+
+### Added
+
+- **Session-Based Authentication**: Unlimited usage with web session tokens
+  - JWT token authentication from chat.z.ai localStorage
+  - Session cookie authentication from browser
+  - Hybrid client supporting 4 auth modes (JWT, Session, API, Anonymous)
+  - Auto-detection of authentication method
+  - X-Client-Version header support (1.0.95)
+- **New Authentication Modules**:
+  - `src/auth/session-cookie.ts` - Session cookie parser (chunked/unchunked)
+  - `src/auth/jwt-auth.ts` - JWT token parser and validator
+  - `src/services/jwt-web-client.ts` - JWT-based web client
+  - `src/services/web-client.ts` - Session cookie-based client
+  - `src/services/session-manager.ts` - Session lifecycle management
+  - `src/services/hybrid-client.ts` - Unified client for all auth modes
+  - `src/services/auth-init.ts` - Auto-detection and initialization
+- **Documentation**: Complete session authentication guides
+- **Project Rename**: ZtoApi → ZaiProxy
+
+### Changed
+
+- **Authentication**: Now supports unlimited usage via web sessions
+- **Environment Variables**: Added `ZAI_JWT_TOKEN` and `ZAI_SESSION_TOKEN`
+- **Documentation**: Updated all references from ZtoApi to ZaiProxy
+- **Architecture**: Enhanced with session-based authentication layer
+
+### Migration Guide
+
+To use session-based authentication:
+
+1. Get JWT token: `localStorage.getItem('token')` from chat.z.ai
+2. Set environment: `export ZAI_JWT_TOKEN="eyJ..."`
+3. Restart server - unlimited usage enabled!
+
 ## [2.1.0] - 2025-11-14
 
 ### Added

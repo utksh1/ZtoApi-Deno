@@ -2,7 +2,7 @@
  * Request statistics tracking
  */
 
-import type { LiveRequest, RequestStats } from "../types/common.ts";
+import type { LiveRequest, RequestStats } from "../types/definitions.ts";
 
 // Global stats
 export let stats: RequestStats = {
@@ -15,10 +15,6 @@ export let stats: RequestStats = {
 
 // Live requests tracking (last 100)
 export let liveRequests: LiveRequest[] = [];
-
-// Tool call statistics
-export const toolStats: Record<string, number> = {};
-export let totalToolCalls: number = 0;
 
 /**
  * Record request statistics
@@ -48,9 +44,11 @@ export function addLiveRequest(
   duration: number,
   userAgent: string,
   model?: string,
-): void {
+  tokens?: { prompt?: number; completion?: number; total?: number },
+  error?: string,
+): LiveRequest {
   const request: LiveRequest = {
-    id: Date.now().toString(),
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     timestamp: new Date(),
     method,
     path,
@@ -58,30 +56,78 @@ export function addLiveRequest(
     duration,
     userAgent,
     model,
+    tokens,
+    error,
   };
 
-  liveRequests.push(request);
+  liveRequests.unshift(request);
 
   // Keep only last 100 requests
   if (liveRequests.length > 100) {
-    liveRequests = liveRequests.slice(1);
+    liveRequests = liveRequests.slice(0, 100);
+  }
+
+  broadcastTelemetry("request", request);
+  broadcastTelemetry("stats", stats);
+
+  return request;
+}
+
+/**
+ * WebSocket clients connected for live telemetry
+ */
+const wsClients = new Set<WebSocket>();
+
+export function addWsClient(ws: WebSocket): void {
+  wsClients.add(ws);
+  ws.onopen = () => {
+    ws.send(JSON.stringify({ type: "init", stats, requests: liveRequests }));
+  };
+  ws.onclose = () => wsClients.delete(ws);
+  ws.onerror = () => wsClients.delete(ws);
+  // If already open, send immediately
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: "init", stats, requests: liveRequests }));
+  }
+}
+
+function broadcastTelemetry(type: string, data: unknown): void {
+  if (wsClients.size === 0) return;
+  const payload = JSON.stringify({ type, data });
+  for (const client of wsClients) {
+    if (client.readyState === WebSocket.OPEN) {
+      try {
+        client.send(payload);
+      } catch {
+        wsClients.delete(client);
+      }
+    }
   }
 }
 
 /**
- * Combined stats recording and live request tracking
+ * Update a live request by ID (e.g. when streaming finishes)
  */
-export function recordAndTrackRequest(
-  startTime: number,
-  method: string,
-  pathname: string,
-  status: number,
-  userAgent: string,
-  model?: string,
-): void {
-  const duration = Date.now() - startTime;
-  recordRequestStats(startTime, pathname, status);
-  addLiveRequest(method, pathname, status, duration, userAgent, model);
+export function updateLiveRequest(id: string, updates: Partial<LiveRequest>): void {
+  const req = liveRequests.find((r) => r.id === id);
+  if (req) {
+    Object.assign(req, updates);
+    broadcastTelemetry("update_request", { id, updates });
+  }
+}
+
+/**
+ * Reset statistics
+ */
+export function resetStats(): void {
+  stats = {
+    totalRequests: 0,
+    successfulRequests: 0,
+    failedRequests: 0,
+    lastRequestTime: new Date(),
+    averageResponseTime: 0,
+  };
+  liveRequests = [];
 }
 
 /**
@@ -101,37 +147,15 @@ export function getLiveRequestsData(): string {
       duration: req.duration || 0,
       timestamp: req.timestamp || new Date(),
       user_agent: req.userAgent || "",
+      model: req.model || null,
+      tokens: req.tokens || null,
+      error: req.error || null,
     }));
 
     return JSON.stringify(requestData);
   } catch (_error) {
     return JSON.stringify([]);
   }
-}
-
-/**
- * Record tool call statistics
- */
-export function recordToolCall(toolName: string, success: boolean): void {
-  totalToolCalls++;
-
-  if (!toolStats[toolName]) {
-    toolStats[toolName] = 0;
-  }
-
-  if (success) {
-    toolStats[toolName]++;
-  }
-}
-
-/**
- * Get tool call statistics
- */
-export function getToolStats(): { total: number; byTool: Record<string, number> } {
-  return {
-    total: totalToolCalls,
-    byTool: { ...toolStats },
-  };
 }
 
 /**
@@ -154,7 +178,6 @@ export function getStatsData(): string {
       successfulRequests: stats.successfulRequests || 0,
       failedRequests: stats.failedRequests || 0,
       averageResponseTime: stats.averageResponseTime || 0,
-      toolCalls: getToolStats(),
     };
 
     return JSON.stringify(statsData);
@@ -164,7 +187,6 @@ export function getStatsData(): string {
       successfulRequests: 0,
       failedRequests: 0,
       averageResponseTime: 0,
-      toolCalls: { total: 0, byTool: {} },
     });
   }
 }

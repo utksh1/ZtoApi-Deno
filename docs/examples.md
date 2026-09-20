@@ -12,7 +12,7 @@ import openai
 # Use any OpenAI client - works out of the box!
 client = openai.OpenAI(
     api_key="your-api-key",
-    base_url="http://localhost:9090/v1"  # Point to ZtoApi
+    base_url="http://localhost:9090/v1"  # Point to ZaiProxy
 )
 
 # Chat with GLM-4.6 (smartest model)
@@ -69,7 +69,7 @@ import anthropic
 # Use official Anthropic client - works seamlessly!
 client = anthropic.Anthropic(
     api_key="your-api-key",
-    base_url="http://localhost:9090/anthropic/v1"  # Point to ZtoApi
+    base_url="http://localhost:9090/anthropic/v1"  # Point to ZaiProxy
 )
 
 # Latest Claude 4.5 Sonnet (REAL model - maps to GLM-4.6)

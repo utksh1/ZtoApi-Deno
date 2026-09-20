@@ -1,9 +1,9 @@
 services:
-  ztoapi:
+  zaiproxy:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ztoapi_service
+    container_name: zaiproxy_service
     ports:
       - "${PORT:-9090}:${PORT:-9090}"
     env_file:
