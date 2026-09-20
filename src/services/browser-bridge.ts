@@ -148,6 +148,21 @@ export class BrowserBridgeService {
         if (page.url().includes("chat.z.ai") && !this.busyPages.has(page) && !this.activePages.includes(page)) {
           this.activePages.push(page);
           this.busyPages.add(page);
+          await this.ensurePageAuthenticated(page);
+          return page;
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    // 2b. If there is an idle about:blank tab (e.g. from headless Chromium startup), reuse it
+    for (const page of contextPages) {
+      try {
+        if (page.url() === "about:blank" && !this.busyPages.has(page) && !this.activePages.includes(page)) {
+          await this.initPageSession(page, context);
+          this.activePages.push(page);
+          this.busyPages.add(page);
           return page;
         }
       } catch {
@@ -158,7 +173,7 @@ export class BrowserBridgeService {
     // 3. Open a new tab if under concurrency ceiling
     if (this.activePages.length < this.maxConcurrentPages) {
       const newPage = (await context.newPage()) as unknown as BrowserPage;
-      await newPage.goto("https://chat.z.ai", { waitUntil: "domcontentloaded" });
+      await this.initPageSession(newPage, context);
       this.activePages.push(newPage);
       this.busyPages.add(newPage);
       return newPage;
@@ -179,10 +194,77 @@ export class BrowserBridgeService {
 
     // Fallback: spawn tab if wait timed out
     const overflowPage = (await context.newPage()) as unknown as BrowserPage;
-    await overflowPage.goto("https://chat.z.ai", { waitUntil: "domcontentloaded" });
+    await this.initPageSession(overflowPage, context);
     this.activePages.push(overflowPage);
     this.busyPages.add(overflowPage);
     return overflowPage;
+  }
+
+  /**
+   * Initialize a fresh browser page with authentication cookies and localStorage tokens
+   */
+  // deno-lint-ignore no-explicit-any
+  private async initPageSession(page: BrowserPage, context: any): Promise<void> {
+    const token = Deno.env.get("ZAI_TOKEN");
+    if (token && typeof context.addCookies === "function") {
+      try {
+        await context.addCookies([
+          {
+            name: "token",
+            value: token,
+            domain: ".z.ai",
+            path: "/",
+            httpOnly: false,
+            secure: true,
+          },
+        ]);
+      } catch {
+        // ignore
+      }
+    }
+
+    await page.goto("https://chat.z.ai", { waitUntil: "domcontentloaded" });
+    await this.ensurePageAuthenticated(page);
+  }
+
+  /**
+   * Ensure the active page has the authenticated token in localStorage
+   */
+  private async ensurePageAuthenticated(page: BrowserPage): Promise<void> {
+    const token = Deno.env.get("ZAI_TOKEN");
+    if (!token) return;
+
+    try {
+      const needsReload = await page.evaluate((tok: string) => {
+        if (!localStorage.getItem("token")) {
+          localStorage.setItem("token", tok);
+          return true;
+        }
+        return false;
+      }, token);
+
+      if (needsReload) {
+        await page.goto("https://chat.z.ai", { waitUntil: "domcontentloaded" });
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  /**
+   * Pre-warm browser bridge in background: connects to CDP and loads authenticated tab
+   */
+  async prewarm(): Promise<void> {
+    try {
+      if (await this.isAvailable()) {
+        logger.info("Pre-warming headless browser bridge session...");
+        const page = await this.acquirePage();
+        this.releasePage(page);
+        logger.info("Browser bridge session pre-warmed and ready!");
+      }
+    } catch (e) {
+      logger.debug("Browser bridge prewarm skipped or error: %v", e);
+    }
   }
 
   /**

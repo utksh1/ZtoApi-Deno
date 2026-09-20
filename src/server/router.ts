@@ -20,6 +20,7 @@ import {
 } from "../handlers/dashboard.ts";
 import { createAnthropicErrorResponse, createOpenAIErrorResponse, setCORSHeaders } from "../utils/helpers.ts";
 import { debugLog } from "../utils/logger.ts";
+import { BrowserBridgeService } from "../services/browser-bridge.ts";
 
 /**
  * Start the server
@@ -38,6 +39,9 @@ export function main(): void {
   if (CONFIG.DASHBOARD_ENABLED) {
     console.log(`Dashboard enabled at: http://localhost:${port}/dashboard`);
   }
+
+  // Pre-warm browser bridge in background if available
+  BrowserBridgeService.getInstance().prewarm().catch(() => {});
 
   Deno.serve({ port, handler: handleRequest });
 }
